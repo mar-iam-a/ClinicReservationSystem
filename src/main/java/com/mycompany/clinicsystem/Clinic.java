@@ -7,7 +7,7 @@ import java.util.*;
 
 /**
  *
- * @author noursameh
+ * @author Javengers
  */ 
 public class Clinic {
     private int ID;
@@ -15,22 +15,27 @@ public class Clinic {
     private String name;
     private String address;
     private double price;
-    //private Schedule schedule;
+    private Schedule schedule;
     private double avgRating;
 
-    // Constructor
-    
-    public Clinic(int ID, int departmentID, String name, String address, double price,double avgRating) {//, Schedule schedule
+    public Clinic(int ID, int departmentID, String name, String address, double price, Schedule schedule) {
         this.ID = ID;
         this.departmentID = departmentID;
         this.name = name;
         this.address = address;
         this.price = price;
-        //this.schedule = schedule;
+        this.schedule = schedule;
+    }
+    
+    public Clinic(int ID, int departmentID, String name, String address, double price, Schedule schedule, double avgRating) {
+        this.ID = ID;
+        this.departmentID = departmentID;
+        this.name = name;
+        this.address = address;
+        this.price = price;
+        this.schedule = schedule;
         this.avgRating = avgRating;
     }
-
-    // Getters and Setters
     
     public int getID() {
         return ID;
@@ -72,6 +77,15 @@ public class Clinic {
         this.price = price;
     }
 
+    public Schedule getSchedule() {
+        return schedule;
+    }
+
+    public void setSchedule(Schedule schedule) {
+        this.schedule = schedule;
+    }
+
+    //some logic
     public double getAvgRating() {
         return avgRating;
     }

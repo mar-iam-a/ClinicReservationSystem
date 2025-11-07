@@ -1,30 +1,31 @@
 package com.mycompany.clinicsystem;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
- * @author mariam
+ * @author Javengers
  */
 public class WorkingHoursRule {
-    private int ID;
     private DayOfWeek day;
-    private LocalDate startTime;
-    private LocalDate endtTime;
+    private LocalTime startTime;
+    private LocalTime endtTime;
 
-    public int getID() {
-        return ID;
+    public WorkingHoursRule(DayOfWeek day, LocalTime startTime, LocalTime endtTime) {
+        this.day = day;
+        this.startTime = startTime;
+        this.endtTime = endtTime;
     }
 
     public DayOfWeek getDay() {
         return day;
     }
 
-    public LocalDate getStartTime() {
+    public LocalTime getStartTime() {
         return startTime;
     }
 
-    public LocalDate getEndtTime() {
+    public LocalTime getEndtTime() {
         return endtTime;
     }
 
@@ -32,11 +33,11 @@ public class WorkingHoursRule {
         this.day = day;
     }
 
-    public void setStartTime(LocalDate startTime) {
+    public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
     }
 
-    public void setEndtTime(LocalDate endtTime) {
+    public void setEndtTime(LocalTime endtTime) {
         this.endtTime = endtTime;
     }
     

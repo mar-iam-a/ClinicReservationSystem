@@ -2,7 +2,7 @@ package com.mycompany.clinicsystem;
 import java.time.LocalDate;
 
 /**
- * @author mariam
+ * @author Javengers
  */
 public class TimeSlot {
     private LocalDate startTime;

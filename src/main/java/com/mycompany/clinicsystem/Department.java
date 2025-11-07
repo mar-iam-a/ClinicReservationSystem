@@ -6,7 +6,7 @@ package com.mycompany.clinicsystem;
 import java.util.*;
 /**
  *
- * @author noursameh
+ * @author Javengers
  */
 public class Department {
    

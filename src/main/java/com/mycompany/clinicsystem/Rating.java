@@ -8,7 +8,7 @@ package com.mycompany.clinicsystem;
 
 /**
  *
- * @author Mariem Tarek
+ * @author Javengers
  */
 public class Rating {
     private int id;

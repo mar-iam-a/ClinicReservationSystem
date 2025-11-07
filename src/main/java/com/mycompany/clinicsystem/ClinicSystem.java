@@ -3,11 +3,13 @@
  */
 
 package com.mycompany.clinicsystem;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
  *
- * @author noursameh                              == validate before switch 
+ * @author Javengers                              == validate before switch 
  */
 public class ClinicSystem {
     
@@ -224,64 +226,65 @@ public class ClinicSystem {
     
     // ----------------------------------------------------------
     
-    private static void addClinic() {
-        
+        private static void addClinic() {
         System.out.println("\n-- Add Clinic --");
+        int ID = generateID();
+
+        in.nextLine();
         System.out.print("Enter clinic name: ");
         String name = in.nextLine();
+
+        System.out.print("Enter clinic price: ");
+        double price = in.nextDouble();
+        in.nextLine();
+
+        System.out.print("Enter address: ");
+        String address = in.nextLine();
 
         System.out.println("Choose specialty:");
         System.out.println("1. Cardiology");
         System.out.println("2. Dermatology");
         System.out.println("3. Pediatrics");
+        System.out.println("4. General");
         System.out.print("> ");
-        String spChoice = in.nextLine().trim();
-        String specialty = switch (spChoice) {
-            case "1" -> "Cardiology";
-            case "2" -> "Dermatology";
-            case "3" -> "Pediatrics";
-            default -> "General";
-        };
+        int choice = in.nextInt();
+        in.nextLine();
 
-        System.out.print("Enter location: ");
-        String location = in.nextLine();
-        
-        System.out.print("Enter slot duration (minutes): ");
-        int slotDuration = Integer.parseInt(in.nextLine());
+        Clinic clinic = new Clinic(ID, choice, name, address, price, null);
 
-        Clinic clinic = new Clinic(name, specialty, location, slotDuration);
-        curDoctor.addClinic(clinic);
+        System.out.println("\nEnter slot duration in minutes:");
+        int slotDurationInMinutes = in.nextInt();
+        in.nextLine();
 
-        System.out.println("Clinic created successfully ✅");
+        Schedule schedule = new Schedule(generateID(), slotDurationInMinutes, null);
+        List<WorkingHoursRule> rules = new ArrayList<>();
 
-        // Set availability
-        setAvailability(clinic);
-
-        System.out.println("System will auto-generate weekly slots.");
-        System.out.println("(Generated sample slots for each day)");
-
-        System.out.println("\n✅ Clinic setup complete!");
-    }
-    
-    private static void setAvailability(Clinic clinic) {
         while (true) {
-            System.out.print("\nAdd day? (Y/N): ");
+            System.out.print("Add day? (Y/N): ");
             String ans = in.nextLine().trim().toUpperCase();
             if (ans.equals("N")) break;
 
-            System.out.print("Day of week: ");
-            String day = in.nextLine().trim();
+            System.out.print("Day of week (e.g. MONDAY): ");
+            DayOfWeek day = DayOfWeek.valueOf(in.nextLine().trim().toUpperCase());
 
-            System.out.print("Start time (e.g. 09:00): ");
-            String start = in.nextLine().trim();
+            System.out.print("Start time (HH:MM): ");
+            LocalTime start = LocalTime.parse(in.nextLine().trim());
 
-            System.out.print("End time (e.g. 13:00): ");
-            String end = in.nextLine().trim();
+            System.out.print("End time (HH:MM): ");
+            LocalTime end = LocalTime.parse(in.nextLine().trim());
 
-            clinic.addAvailability(new Availability(day, start, end));
-            System.out.println("Added availability: " + day + " " + start + "-" + end);
+            rules.add(new WorkingHoursRule(day, start, end));
         }
-        System.out.println("Availability saved ✅");
+
+        schedule.setWeeklyRules(rules);
+        clinic.setSchedule(schedule);
+        cur_Practitioner.setClinic(clinic);
+
+        System.out.println("\nClinic added successfully ✅");
     }
+
+
+    
+   
 
 }

@@ -7,7 +7,7 @@ package com.mycompany.clinicsystem;
 
 /**
  *
- * @author Ahmed Mamdouh
+ * @author Javengers
  */
 public class Appointment {
     private Patient patient;

@@ -282,6 +282,67 @@ public class ClinicSystem {
 
         System.out.println("\nClinic added successfully ✅");
     }
+        //================================
+     private static void viewClinic() {
+    System.out.println("\n-- View Clinic --");
+
+    if (cur_Practitioner.getClinic() == null) {
+        System.out.println("You don't have a clinic yet.");
+        return;
+    }
+
+    Clinic clinic = cur_Practitioner.getClinic();
+    
+    System.out.println("Name: " + clinic.getName());
+    System.out.println("Address: " + clinic.getAddress());
+    System.out.println("Price: " + clinic.getPrice());
+
+    // التخصص حسب الرقم
+    String specialty = switch (clinic.getDepartmentID()) {
+        case 1 -> "Cardiology";
+        case 2 -> "Dermatology";
+        case 3 -> "Pediatrics";
+        case 4 -> "General";
+        default -> "Unknown";
+    };
+    System.out.println("Specialty: " + specialty);
+
+    // عرض جدول العمل (schedule)
+    Schedule schedule = clinic.getSchedule();
+    if (schedule == null) {
+        System.out.println("\nNo schedule set for this clinic.");
+    } else {
+        System.out.println("\nSlot duration: " + schedule.getSlotDurationInMinutes() + " minutes");
+        System.out.println("Working Days & Hours:");
+        if (schedule.getWeeklyRules() == null || schedule.getWeeklyRules().isEmpty()) {
+            System.out.println("No working hours defined.");
+        } else {
+            for (WorkingHoursRule rule : schedule.getWeeklyRules()) {
+                System.out.println("- " + rule.getDay() + ": " 
+                    + rule.getStartTime() + " → " + rule.getEndTime());
+            }
+        }
+    }
+
+    // لو عايزة كمان نعرض الـ appointments أو ratings (اختياري)
+    if (clinic.getAppointments() != null && !clinic.getAppointments().isEmpty()) {
+        System.out.println("\nAppointments:");
+        for (Appointment ap : clinic.getAppointments()) {
+            System.out.println("- " + ap.getPatient().getName() + 
+                               " at " + ap.getAppointmentDateTime());
+        }
+    }
+
+    if (clinic.getRatings() != null && !clinic.getRatings().isEmpty()) {
+        System.out.println("\nRatings:");
+        for (Rating r : clinic.getRatings()) {
+            System.out.println("- " + r.getPatient().getName() + ": " + r.getValue() + "/5");
+        }
+    }
+
+    System.out.println();
+}
+
 
 
     

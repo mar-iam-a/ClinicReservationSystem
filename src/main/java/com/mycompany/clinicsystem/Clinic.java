@@ -17,6 +17,8 @@ public class Clinic {
     private double price;
     private Schedule schedule;
     private double avgRating;
+    //private List<Appointment> appointments = new ArrayList<>();
+    //private List<Rating> ratings = new ArrayList<>();
 
     public Clinic(int ID, int departmentID, String name, String address, double price, Schedule schedule) {
         this.ID = ID;

@@ -40,5 +40,10 @@ public class WorkingHoursRule {
     public void setEndtTime(LocalTime endtTime) {
         this.endtTime = endtTime;
     }
+
+    @Override
+    public String toString() {
+        return "WorkingHoursRule{" + "day=" + day + ", startTime=" + startTime + ", endtTime=" + endtTime + '}';
+    }
     
 }

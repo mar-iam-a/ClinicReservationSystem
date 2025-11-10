@@ -10,8 +10,12 @@ public class Practitioner extends User{
         this.clinic = clinic;
     }
     public List<Appointment> getAppointments() {
-        return clinic != null ? clinic.getAppointments() : null;
+        if (clinic == null || clinic.getSchedule() == null) {
+            return null;
+        }
+        return clinic.getAppointments();
     }
+    
 
     public List<Rating> getRatings() {
         return clinic != null ? clinic.getRatings() : null;
@@ -25,11 +29,12 @@ public class Practitioner extends User{
         this.clinic = clinic;
     }
 
-    public void updateClinicInfo() {
+    public void updateClinicInfo(String name, String address, double price) {
         if (clinic != null) {
-            clinic.updateSchedule();
+            clinic.setName(name);
+            clinic.setAddress(address);
+            clinic.setPrice(price);
+            
         }
     }
-}
-    
 }

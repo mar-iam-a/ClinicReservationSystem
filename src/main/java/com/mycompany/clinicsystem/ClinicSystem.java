@@ -288,10 +288,11 @@ public class ClinicSystem {
         }
 
         schedule.setWeeklyRules(rules);
-        clinic.setSchedule(schedule);
+        clinic.setSchedule(schedule);// time slots created
         cur_Practitioner.setClinic(clinic);
         clinics.add(clinic);
         System.out.println("\nClinic added successfully ✅");
+        
     }
         //================================
     private static void viewClinic() {
@@ -375,93 +376,57 @@ public class ClinicSystem {
             return;
         }
         ///////////////////////
-        // بعد ما المريض يختار اليوم
-        System.out.println(" choose day ");
-        String chosenDay = in.nextLine().trim();
+        
+        System.out.println("\nAvailable Working Days:");
+        for (WorkingHoursRule rule : selected.getSchedule().getWeeklyRules()) {
+            System.out.println("- " + rule.getDay() + " (" + rule.getStartTime() + " - " + rule.getEndtTime() + ")");
+        }
+
+        System.out.print("Choose a day (e.g. MONDAY): ");
+        String dayInput = in.nextLine().trim().toUpperCase();
+
+        DayOfWeek chosenDay;
+        try {
+            chosenDay = DayOfWeek.valueOf(dayInput);
+        } catch (Exception e) {
+            System.out.println("Invalid day name.");
+            return;
+        }
+
         List<TimeSlot> availableSlots = new ArrayList<>();
-
-       for (TimeSlot slot : selected.getSchedule().getSlots()) {
-             if(slot.getDay().toString().equalsIgnoreCase(chosenDay) && !slot.isBooked()) {
-             availableSlots.add(slot);
-       }
-     }
-
-       if (availableSlots.isEmpty()) {
-           System.out.println(" No available slots on this day.");
-           return;
+        for (TimeSlot slot : selected.getSchedule().getSlots()) {
+            if (slot.getDay() == chosenDay && !slot.isBooked()) {
+                availableSlots.add(slot);
+            }
         }
 
-        System.out.println("\nAvailable slots:");
+        if (availableSlots.isEmpty()) {
+            System.out.println("No available slots on " + chosenDay + ".");
+            return;
+        }
+
+        System.out.println("\nAvailable slots on " + chosenDay + ":");
         for (int i = 0; i < availableSlots.size(); i++) {
-              System.out.println((i + 1) + ". " + availableSlots.get(i).getStartTime() + " - " + availableSlots.get(i).getEndTime());
+            TimeSlot s = availableSlots.get(i);
+            System.out.println((i + 1) + ". " + s.getStartTime() + " - " + s.getEndTime());
         }
 
-       System.out.print("Choose a slot number: ");
-       int slotIndex = in.nextInt();
-       in.nextLine();
+        System.out.print("Choose a slot number: ");
+        int slotIndex = in.nextInt();
+        in.nextLine();
 
-       if (slotIndex <= 0 || slotIndex > availableSlots.size()) return;
+        if (slotIndex <= 0 || slotIndex > availableSlots.size()) return;
 
         TimeSlot chosenSlot = availableSlots.get(slotIndex - 1);
-        chosenSlot.markAsBooked(); // نحجزها فوراً
+        chosenSlot.markAsBooked();
 
         Appointment newApp = new Appointment(cur_Patient, selected, chosenSlot);
         appointments.add(newApp);
 
-        System.out.println(" Appointment booked successfully for " + chosenSlot.getDay() +
-                           " " + chosenSlot.getStartTime() + " - " + chosenSlot.getEndTime());
-
-
-//        System.out.print("\nEnter booking day (e.g. MONDAY): ");
-  //      String dayInput = in.nextLine().trim().toUpperCase();
-
-//        DayOfWeek chosenDay;
-//        try {
-//            chosenDay = DayOfWeek.valueOf(dayInput);
-//        } catch (Exception e) {
-//            System.out.println("❌ Invalid day name.");
-//            return;
-//        }
-
-//        WorkingHoursRule chosenRule = null;
-//        for (WorkingHoursRule rule : selected.getSchedule().getWeeklyRules()) {
-//            if (rule.getDay() == chosenDay)
-//                chosenRule = rule;
-//        }
-
-//        if (chosenRule == null) {
-//            System.out.println("❌ This clinic doesn’t work on that day.");
-//            return;
-//        }
-
-        //System.out.print("Enter appointment time (HH:MM): ");
-        //String timeInput = in.nextLine().trim();
-
-        // نعمل كائن TimeSlot لتخزين الموعد
-        TimeSlot slot = new TimeSlot(chosenDay, timeInput);
-
-        // التأكد إن الوقت داخل نطاق العمل
-//        LocalTime selectedTime = LocalTime.parse(timeInput);
-//        if (selectedTime.isBefore(chosenRule.getStartTime()) || selectedTime.isAfter(chosenRule.getEndtTime())) {
-//            System.out.println("❌ Time outside working hours.");
-//            return;
-//        }
-//
-//        // تأكد إن الـ slot مش محجوز قبل كده
-//        for (Appointment a : appointments) {
-//            if (a.getClinic() == selected && a.getAppointmentDateTime().equals(slot)) {
-//                System.out.println("❌ This slot is already booked.");
-//                return;
-//            }
-//        }
-//
-//        // إنشاء الموعد الجديد
-//        Appointment newApp = new Appointment(cur_Patient, selected, slot);
-//        appointments.add(newApp);
-//        System.out.println("✅ Appointment booked successfully!");
-//    }
-//
-//    
+        System.out.println("✅ Appointment booked successfully for " + chosenDay + " " +
+                            chosenSlot.getStartTime() + " - " + chosenSlot.getEndTime());
+    }
+  
     private static void viewMyAppointments() {
         System.out.println("\n-- My Appointments --");
 

@@ -15,7 +15,6 @@ public class Appointment {
     private TimeSlot appointmentDateTime;
     
     
-    // Constructor
     public Appointment(Patient patient, Clinic clinic, TimeSlot appointmentDateTime) {
         this.patient = patient;
         this.clinic = clinic;
@@ -23,7 +22,6 @@ public class Appointment {
     }
     
     
-     // Getters
     public Patient getPatient() {
         return patient;
     }
@@ -36,13 +34,11 @@ public class Appointment {
         return appointmentDateTime;
     }
 
-    // Setters
     public void setAppointmentDateTime(TimeSlot appointmentDateTime) {
         this.appointmentDateTime = appointmentDateTime;
     }
     
     
-    // tostring()
     @Override
     public String toString() {
         return "Appointment{" +

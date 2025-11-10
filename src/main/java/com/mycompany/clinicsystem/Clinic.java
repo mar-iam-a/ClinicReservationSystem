@@ -17,17 +17,13 @@ public class Clinic {
     private double price;
     private Schedule schedule;
     private double avgRating;
-    
+    private List<Appointment> appointments ;
+    private List<Rating>ratings ;
 
-    public Clinic(int ID, int departmentID, String name, String address, double price, Schedule schedule) {
-        this.ID = ID;
-        this.departmentID = departmentID;
-        this.name = name;
-        this.address = address;
-        this.price = price;
-        this.schedule = schedule;
+    public List<Rating> getRatings() {
+        return ratings;
     }
-    
+
     public Clinic(int ID, int departmentID, String name, String address, double price, Schedule schedule, double avgRating) {
         this.ID = ID;
         this.departmentID = departmentID;
@@ -36,6 +32,8 @@ public class Clinic {
         this.price = price;
         this.schedule = schedule;
         this.avgRating = avgRating;
+        this.appointments = new ArrayList();
+        this.ratings = new ArrayList();
     }
     
     public int getID() {
@@ -84,25 +82,30 @@ public class Clinic {
 
     public void setSchedule(Schedule schedule) {
         this.schedule = schedule;
+        schedule.generateTimeSlots();
     }
 
     //some logic
     public double getAvgRating() {
-        return avgRating;
+        double r = 0;
+        for(Rating x : ratings) {
+            r += x.getScore();
+        }
+        return r/ratings.size();
     }
 
     public void setAvgRating(double avgRating) {    
         this.avgRating = avgRating;
     }
+    
+    
+    public void addSchedule(Schedule schedule) {
+        this.schedule = schedule;
+    }
 
-//    // Methods
-//    public void addSchedule(Schedule schedule) {
-//        this.schedule = schedule;
-//    }
-//
-//    public void updateSchedule(Schedule schedule) {
-//        this.schedule = schedule;
-//    }
+    public List<Appointment> getAppointments() {
+        return appointments;
+    }
     
     
 }

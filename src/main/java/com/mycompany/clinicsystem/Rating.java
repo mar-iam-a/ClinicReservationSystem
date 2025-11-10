@@ -10,30 +10,20 @@ package com.mycompany.clinicsystem;
  *
  * @author Javengers
  */
-public class Rating {
-    private int id;
+public class Rating {    
     private Patient patient;
     private Clinic clinic;
     private int score;
     private String comment;
     
     
-    
-    // constractor
-    Rating(int id , Patient patient , Clinic clinic , int score , String comment){
-        this.id=id;
+    Rating( Patient patient , Clinic clinic , int score , String comment){
         this.patient=patient;
         this.clinic=clinic;
         this.score=score;
         this.comment=comment;
     }
-    
-    
-    
-    //Getter
-    public int getId(){
-        return id;
-    }
+
     
     public Patient getPatient(){
         return patient;
@@ -51,10 +41,6 @@ public class Rating {
         return comment;
     }
     
-    
-    
-    
-    //setter
     public void setScore(int score){
         if(score>=1 && score<=5)
             this.score=score;
@@ -66,13 +52,10 @@ public class Rating {
     public void setComment(String comment){
         this.comment=comment;
     }
-    
-    
-    // show comments
 
     @Override
     public String toString() {
-        return "Rating{" + "id=" + id + ", patient=" + patient + ", clinic=" + clinic + ", score=" + score + ", comment=" + comment + '}';
+        return "Rating{ patient=" + patient + ", clinic=" + clinic + ", score=" + score + ", comment=" + comment + '}';
     }
     
 }

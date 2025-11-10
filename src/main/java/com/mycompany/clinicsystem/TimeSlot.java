@@ -35,9 +35,6 @@ public class TimeSlot {
         this.day = day;
     }
 
-    
-        
-   //
 
     public LocalTime getStartTime() {
         return startTime;

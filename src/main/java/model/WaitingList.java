@@ -3,49 +3,56 @@ package model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Represents an entry in the WaitingList for a specific Clinic.
- * Stores patient, clinic, request time, and the current status of the request.
- * @author noursameh
- */
 public class WaitingList {
     private int id;
     private Patient patient;
     private Clinic clinic;
+    private LocalDate date;                  // ← مهم جدًا
     private LocalDateTime requestTime;
-    private Status status;
+    private WaitingStatus status;            // ← نوع جديد (مش Status العادي)
 
-    // ★ constructor كامل ★
-    public WaitingList(int id, Patient patient, Clinic clinic, LocalDateTime requestTime, Status status) {
+    // ★ constructor كامل
+    public WaitingList(int id, Patient patient, Clinic clinic, LocalDate date, LocalDateTime requestTime, WaitingStatus status) {
         this.id = id;
         this.patient = patient;
         this.clinic = clinic;
+        this.date = date;
         this.requestTime = requestTime;
         this.status = status;
     }
 
-    // ★ constructor بسيط (للاستخدام في الواجهة) ★
-    public WaitingList(Patient patient, Clinic clinic) {
-        this(0, patient, clinic, LocalDateTime.now(), Status.Booked);
+    // constructor بدون id (للاستخدام عند الإضافة)
+    public WaitingList(Patient patient, Clinic clinic, LocalDate date) {
+        this(0, patient, clinic, date, LocalDateTime.now(), WaitingStatus.PENDING);
     }
 
-    // Getters and Setters
+
+    // Getters & Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+
     public Patient getPatient() { return patient; }
+    public void setPatient(Patient patient) { this.patient = patient; }
+
     public Clinic getClinic() { return clinic; }
+    public void setClinic(Clinic clinic) { this.clinic = clinic; }
+
+    public LocalDate getDate() { return date; }
+    public void setDate(LocalDate date) { this.date = date; }
+
     public LocalDateTime getRequestTime() { return requestTime; }
-    public Status getStatus() { return status; }
-    public void setStatus(Status status) { this.status = status; }
+    public void setRequestTime(LocalDateTime requestTime) { this.requestTime = requestTime; }
+
+    public WaitingStatus getStatus() { return status; }
+    public void setStatus(WaitingStatus status) { this.status = status; }
 
     @Override
     public String toString() {
-        return "WaitingList{" +
-                "id=" + id +
-                ", patientId=" + (patient != null ? patient.getID() : "N/A") +
-                ", clinicId=" + (clinic != null ? clinic.getID() : "N/A") +
-                ", requestTime=" + requestTime +
+        return "WaitingList{id=" + id +
+                ", patient=" + (patient != null ? patient.getName() : "?") +
+                ", clinic=" + (clinic != null ? clinic.getName() : "?") +
+                ", date=" + date +
                 ", status=" + status +
-                '}';
+                "}";
     }
 }

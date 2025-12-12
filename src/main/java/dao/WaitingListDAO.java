@@ -1,263 +1,196 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
-import database.DBConnection;
-import model.WaitingList;
-import model.Patient;
-import model.Clinic;
-import model.Status;
 
+import database.DBConnection;
+import model.*;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author noursameh
- */
 public class WaitingListDAO implements GenericDAO<WaitingList> {
 
     private final PatientDAO patientDAO = new PatientDAO();
     private final ClinicDAO clinicDAO = new ClinicDAO();
 
+    // ★★ التعديل 1: استخراج كائن WaitingList من ResultSet مع دعم `date` و `WaitingStatus` ★★
     private WaitingList extractWaitingListFromResultSet(ResultSet rs) throws SQLException {
+        int id = rs.getInt("id");
         int patientId = rs.getInt("patient_id");
         int clinicId = rs.getInt("clinic_id");
+        LocalDate date = rs.getDate("date").toLocalDate(); // ← مهم
+        LocalDateTime requestTime = rs.getTimestamp("request_time").toLocalDateTime();
+        String statusStr = rs.getString("status");
+        WaitingStatus status = WaitingStatus.valueOf(statusStr); // ← استخدم WaitingStatus
 
         Patient patient = patientDAO.getById(patientId);
         Clinic clinic = clinicDAO.getById(clinicId);
 
-        LocalDateTime requestTime = rs.getTimestamp("request_time").toLocalDateTime();
-
-        Status status = Status.valueOf(rs.getString("status"));
-
-        return new WaitingList(
-                rs.getInt("id"),
-                patient,
-                clinic,
-                requestTime,
-                status
-        );
+        return new WaitingList(id, patient, clinic, date, requestTime, status);
     }
-    // هستخدمها في السيرفس
-    public WaitingList getNextPendingRequestForClinic(int clinicId) throws SQLException {
-        String sql = "SELECT * FROM WaitingList WHERE clinic_id = ? AND status = 'PENDING' ORDER BY request_time ASC LIMIT 1";
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
 
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql);
+    // ★★ التعديل 2: جلب أول مريض في قائمة الانتظار ليوم محدد ★★
+    public WaitingList getFirstPendingForDate(int clinicId, LocalDate date) throws SQLException {
+        String sql = """
+            SELECT * FROM WaitingList 
+            WHERE clinic_id = ? AND date = ? AND status = 'PENDING' 
+            ORDER BY request_time ASC 
+            LIMIT 1
+            """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
             ps.setInt(1, clinicId);
-            rs = ps.executeQuery();
+            ps.setDate(2, Date.valueOf(date));
 
-            if (rs.next()) {
-                return extractWaitingListFromResultSet(rs);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? extractWaitingListFromResultSet(rs) : null;
             }
-            return null;
-        } finally {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
         }
     }
 
-
-    // Insert
-    @Override
-    public void add(WaitingList waitingList) throws SQLException {
-        String sql = "INSERT INTO WaitingList (patient_id, clinic_id, request_time, status) VALUES (?, ?, ?, ?)";
-        Connection con = null;
-        PreparedStatement ps = null;
-
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-
-            ps.setInt(1, waitingList.getPatient().getID());
-            ps.setInt(2, waitingList.getClinic().getID());
-            ps.setTimestamp(3, Timestamp.valueOf(waitingList.getRequestTime()));
-            ps.setString(4, waitingList.getStatus().name());
-
-            int rowsAffected = ps.executeUpdate();
-
-            if (rowsAffected > 0) {
-                ResultSet rs = null;
-                try {
-                    rs = ps.getGeneratedKeys();
-                    if (rs.next()) {
-                        waitingList.setId(rs.getInt(1));
-                    }
-                } finally {
-                    if (rs != null) rs.close();
-                }
-            }
-        } finally {
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
-        }
-    }
-
-    // Get by ID
-    @Override
-    public WaitingList getById(int id) throws SQLException {
-        String sql = "SELECT * FROM WaitingList WHERE id = ?";
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return extractWaitingListFromResultSet(rs);
-            }
-            return null;
-        } finally {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
-        }
-    }
-
-    // Get All
-    @Override
-    public List<WaitingList> getAll() throws SQLException {
-        String sql = "SELECT * FROM WaitingList ORDER BY request_time ASC";
-        List<WaitingList> waitingLists = new ArrayList<>();
-        Connection con = null;
-        Statement st = null;
-        ResultSet rs = null;
-
-        try {
-            con = DBConnection.getConnection();
-            st = con.createStatement();
-            rs = st.executeQuery(sql);
-
-            while (rs.next()) {
-                waitingLists.add(extractWaitingListFromResultSet(rs));
-            }
-            return waitingLists;
-        } finally {
-            if (rs != null) rs.close();
-            if (st != null) st.close();
-            DBConnection.closeConnection(con);
-        }
-    }
-
-    // Update
-    @Override
-    public void update(WaitingList waitingList) throws SQLException {
-        String sql = "UPDATE WaitingList SET patient_id = ?, clinic_id = ?, request_time = ?, status = ? WHERE id = ?";
-        Connection con = null;
-        PreparedStatement ps = null;
-
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql);
-
-            ps.setInt(1, waitingList.getPatient().getID());
-            ps.setInt(2, waitingList.getClinic().getID());
-            ps.setTimestamp(3, Timestamp.valueOf(waitingList.getRequestTime()));
-            ps.setString(4, waitingList.getStatus().name());
-            ps.setInt(5, waitingList.getId());
-
-            ps.executeUpdate();
-
-        } finally {
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
-        }
-    }
-
-    // ️ Delete
-    @Override
-    public void delete(int id) throws SQLException {
-        String sql = "DELETE FROM WaitingList WHERE id = ?";
-        Connection con = null;
-        PreparedStatement ps = null;
-
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        } finally {
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
-        }
-    }
-
-    public List<WaitingList> getPatientPendingRequests(int patientId) throws SQLException {
-        String sql = "SELECT * FROM WaitingList WHERE patient_id = ? AND status = 'PENDING' ORDER BY request_time ASC";
-        List<WaitingList> waitingLists = new ArrayList<>();
-
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, patientId);
-            rs = ps.executeQuery();
-
-            while (rs.next()) {
-                // استخدام الدالة المساعدة لاستخراج الكائن من نتيجة الاستعلام
-                waitingLists.add(extractWaitingListFromResultSet(rs));
-            }
-            return waitingLists;
-
-        } finally {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
-        }
-    }
-
+    // ★★ التعديل 3: وجود طلب انتظار نشط ليوم محدد ★★
     public boolean existsPendingRequest(int patientId, int clinicId, LocalDate date) throws SQLException {
-        // نبحث عن أي سجل يطابق الثلاثي (المريض، العيادة، التاريخ) وحالته PENDING
-        String sql = "SELECT 1 FROM WaitingList WHERE patient_id = ? AND clinic_id = ? AND date = ? AND status = 'PENDING' LIMIT 1";
-
-        Connection con = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        try {
-            con = DBConnection.getConnection();
-            ps = con.prepareStatement(sql);
+        String sql = """
+            SELECT 1 FROM WaitingList 
+            WHERE patient_id = ? AND clinic_id = ? AND date = ? AND status = 'PENDING' 
+            LIMIT 1
+            """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, patientId);
             ps.setInt(2, clinicId);
-            ps.setDate(3, Date.valueOf(date)); // تحويل LocalDate إلى java.sql.Date
+            ps.setDate(3, Date.valueOf(date));
 
-            rs = ps.executeQuery();
-
-            // إذا كان rs.next() صحيحًا، فهذا يعني أنه وجد صفًا واحدًا على الأقل يطابق الشروط.
-            return rs.next();
-
-        } finally {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            DBConnection.closeConnection(con);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
+    // ★★ التعديل 4: طلبات المريض (محدّثة) ★★
+    public List<WaitingList> getPatientPendingRequests(int patientId) throws SQLException {
+        String sql = """
+            SELECT * FROM WaitingList 
+            WHERE patient_id = ? AND status IN ('PENDING', 'OFFERED') 
+            ORDER BY request_time DESC
+            """;
+        List<WaitingList> list = new ArrayList<>();
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
+            ps.setInt(1, patientId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractWaitingListFromResultSet(rs));
+                }
+            }
+        }
+        return list;
+    }
 
+    // ★★ التعديل 5: insert مع `date` ★★
+    @Override
+    public void add(WaitingList item) throws SQLException {
+        String sql = """
+            INSERT INTO WaitingList (patient_id, clinic_id, date, request_time, status) 
+            VALUES (?, ?, ?, ?, ?)
+            """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
+            ps.setInt(1, item.getPatient().getID());
+            ps.setInt(2, item.getClinic().getID());
+            ps.setDate(3, Date.valueOf(item.getDate())); // ← مهم
+            ps.setTimestamp(4, Timestamp.valueOf(item.getRequestTime()));
+            ps.setString(5, item.getStatus().name());
+
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        item.setId(rs.getInt(1));
+                    }
+                }
+            }
+        }
+    }
+
+    // ★★ التعديل 6: update مع `date` و `WaitingStatus` ★★
+    @Override
+    public void update(WaitingList item) throws SQLException {
+        String sql = """
+            UPDATE WaitingList 
+            SET patient_id = ?, clinic_id = ?, date = ?, request_time = ?, status = ? 
+            WHERE id = ?
+            """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, item.getPatient().getID());
+            ps.setInt(2, item.getClinic().getID());
+            ps.setDate(3, Date.valueOf(item.getDate()));
+            ps.setTimestamp(4, Timestamp.valueOf(item.getRequestTime()));
+            ps.setString(5, item.getStatus().name());
+            ps.setInt(6, item.getId());
+
+            ps.executeUpdate();
+        }
+    }
+
+    // ★★ باقي الدوال (unchanged تقريبًا) ★★
+    @Override
+    public WaitingList getById(int id) throws SQLException {
+        String sql = "SELECT * FROM WaitingList WHERE id = ?";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? extractWaitingListFromResultSet(rs) : null;
+            }
+        }
+    }
+
+    @Override
+    public List<WaitingList> getAll() throws SQLException {
+        String sql = "SELECT * FROM WaitingList ORDER BY request_time DESC";
+        List<WaitingList> list = new ArrayList<>();
+        try (Connection con = DBConnection.getConnection();
+             Statement st = con.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+                list.add(extractWaitingListFromResultSet(rs));
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public void delete(int id) throws SQLException {
+        String sql = "DELETE FROM WaitingList WHERE id = ?";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    // ★★ دالة إضافية مفيدة: تغيير حالة مجموعة من الطلبات ★★
+    public void expireAllOfferedOlderThan(LocalDateTime threshold) throws SQLException {
+        String sql = """
+            UPDATE WaitingList 
+            SET status = 'EXPIRED' 
+            WHERE status = 'OFFERED' AND request_time < ?
+            """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setTimestamp(1, Timestamp.valueOf(threshold));
+            ps.executeUpdate();
+        }
+    }
 }
-
-
-
-
-
-

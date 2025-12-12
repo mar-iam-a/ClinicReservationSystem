@@ -148,11 +148,30 @@ public class ClinicSlotsController {
             if (availableForDay.isEmpty()) {
                 boolean isWorking = selectedClinic.getSchedule().getWeeklyRules().stream()
                         .anyMatch(rule -> rule.getDay() == date.getDayOfWeek());
-                String msg = isWorking ? "No slots available — all booked." : "Doctor not working.";
-                Label label = new Label(msg);
-                label.setStyle("-fx-font-size: 16px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-                slotsContainer.getChildren().add(label);
-            } else {
+
+                if (isWorking) {
+                    // 🟢 كل السلوتس محجوزة — أظهر زر الانضمام لقائمة الانتظار
+                    Label msgLabel = new Label("No slots available — all booked.");
+                    msgLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+
+                    Button joinWLBtn = new Button("🕒 Join Waiting List");
+                    joinWLBtn.setStyle("-fx-background-color: #1ABC9C; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-background-radius: 20;");
+
+                    joinWLBtn.setOnAction(e -> handleJoinWaitingList(selectedClinic, date));
+
+                    HBox box = new HBox(15, msgLabel, joinWLBtn);
+                    box.setAlignment(Pos.CENTER);
+                    box.setPadding(new Insets(10));
+                    slotsContainer.getChildren().add(box);
+
+                } else {
+                    // 🔴 الطبيب مش شغال في هذا اليوم
+                    Label label = new Label("Doctor not working on selected date.");
+                    label.setStyle("-fx-font-size: 16px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                    slotsContainer.getChildren().add(label);
+                }
+            }else {
+                // ✅ ★★ هذا هو السطر المفقود ★★
                 availableForDay.forEach(slot -> slotsContainer.getChildren().add(createSlotCard(slot)));
             }
 
@@ -352,7 +371,7 @@ public class ClinicSlotsController {
         }
 
         try {
-            WaitingList newRequest = new WaitingList(currentPatient, clinic);
+            WaitingList newRequest = new WaitingList(currentPatient, clinic,date);
             waitingListService.addPatient(newRequest);
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);

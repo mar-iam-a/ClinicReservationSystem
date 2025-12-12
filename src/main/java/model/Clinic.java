@@ -195,9 +195,9 @@ public class Clinic {
         }
     }
     
-    public void addToWaitingList(Patient patient) {
-        waitingList.add(new WaitingList(patient,this));
-    }
+//    public void addToWaitingList(Patient patient) {
+//        waitingList.add(new WaitingList(patient,this));
+//    }
     
     public void notifyWaitingList(TimeSlot freedSlot) {
         if(waitingList.isEmpty()) return;

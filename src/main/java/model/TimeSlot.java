@@ -41,6 +41,10 @@ public class TimeSlot {
         this.isBooked = isBooked;
         this.isCancelled = isCancelled;
     }
+    public TimeSlot(LocalDate date, LocalTime startTime) {
+        this.date = date;
+        this.startTime = startTime;
+    }
 
     /*TimeSlot(DayOfWeek day, LocalTime current, LocalTime slotEnd) {
         this.day = day;

@@ -7,9 +7,14 @@ import jakarta.mail.MessagingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import model.*;
 
 /**
@@ -25,6 +30,7 @@ public class ClinicService {
     private final WaitingListDAO waitingListDAO = new WaitingListDAO();
     private AppointmentService appointmentService; // يتم تعيينه من الخارج لتجنب circular dependency
     private final NotificationService notificationService = new NotificationService();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
 
     public void setAppointmentService(AppointmentService appointmentService) {
@@ -35,45 +41,59 @@ public class ClinicService {
      * Notifies the first patient in the waiting list about an available time slot.
      */
     public void notifyWaitingList(Clinic clinic, TimeSlot freedSlot) {
-        if (appointmentService == null) {
-            System.err.println("AppointmentService not set in ClinicService!");
-            return;
-        }
+        if (clinic == null || freedSlot == null) return;
 
         try {
-            if (clinic.getWaitingList().isEmpty()) return;
+            // 1️⃣ جلب أول مريض في قائمة الانتظار ليوم السلوت المُحرر
+            WaitingList next = waitingListDAO.getFirstPendingForDate(clinic.getID(), freedSlot.getDate());
+            if (next == null) return;
 
-            WaitingList next = clinic.getWaitingList().peek();
+            // 2️⃣ غيّر الحالة لـ OFFERED + سجّل وقت العرض
+            next.setStatus(WaitingStatus.OFFERED);
+            next.setRequestTime(LocalDateTime.now()); // ← نستخدم requestTime كـ offered_at
+            waitingListDAO.update(next);
+
+            // 3️⃣ أرسل إيميل
             Patient p = next.getPatient();
+            if (p != null && p.getEmail() != null) {
+                String subject = "🔔 A Slot Is Available!";
+                String body = String.format(
+                        "<h3>Dear %s,</h3>" +
+                                "<p>A slot just opened on <strong>%s</strong> at <strong>%s</strong> in Dr. %s's clinic.</p>" +
+                                "<p>⏳ You have <strong>10 minutes</strong> to confirm your booking.</p>" +
+                                "<p><a href='#' style='display:inline-block;background:#2ecc71;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>✅ Confirm Now</a></p>" +
+                                "<p>If no action is taken, this offer will expire automatically.</p>",
+                        p.getName(),
+                        freedSlot.getDate(),
+                        freedSlot.getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")),
+                        clinic.getDoctorName()
+                );
+                notificationService.sendEmail(p.getEmail(), subject, body);
+            }
 
-            String subject = "Clinic Slot Available!";
-            String body = "<h3>Hi " + p.getName() + ",</h3>"
-                    + "<p>A time slot just became available at <b>" + freedSlot + "</b>.</p>"
-                    + "<p>You have 1 minute to book it</p>";
+            // 4️⃣ مؤقت 10 دقايق (مش 1 دقيقة — حسب متطلباتك)
+            int entryId = next.getId();
+            scheduler.schedule(() -> {
+                try {
+                    WaitingList refreshed = waitingListDAO.getById(entryId);
+                    if (refreshed != null && refreshed.getStatus() == WaitingStatus.OFFERED) {
+                        // ✅ لم يُ confirm → EXPIRED
+                        refreshed.setStatus(WaitingStatus.EXPIRED);
+                        waitingListDAO.update(refreshed);
 
-            notificationService.sendEmail(p.getEmail(), subject, body);
-
-            new java.util.Timer().schedule(new java.util.TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        boolean booked = appointmentService.isBooked(p, freedSlot);
-                        if (booked) {
-                            clinic.getWaitingList().remove(next);
-                            waitingListDAO.delete(next.getId());
-                        } else {
-                            clinic.getWaitingList().poll();
-                            waitingListDAO.delete(next.getId());
-                            notifyWaitingList(clinic, freedSlot); // إعادة المحاولة
-                        }
-                    } catch (SQLException e) {
-                        System.err.println("Error processing waiting list: " + e.getMessage());
+                        // ✅ اعرض على اللي بعده
+                        notifyWaitingList(clinic, freedSlot); // ← recursive, لكن آمن (يوقف لو مفيش حد)
                     }
+                } catch (SQLException e) {
+                    System.err.println("Error in waiting list expiry: " + e.getMessage());
                 }
-            }, 60 * 1000);
+            }, 10, TimeUnit.MINUTES);
 
-        } catch (Exception e) {
-            System.err.println("Error notifying waiting list: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("❌ Failed to notify waiting list: " + e.getMessage());
+            e.printStackTrace();
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -129,10 +149,19 @@ public class ClinicService {
                 }
             }
             if (!scheduled) {
-                addToWaitingList(clinic, app.getPatient());
-                String subject = "Your appointment is cancelled !";
-                String body = "<h3>Hi " + app.getPatient().getName() + ",</h3>"
-                        + "<p>We already put you in waiting list </p>";
+                LocalDate date = app.getAppointmentDateTime().getDate();
+                addToWaitingList(clinic, app.getPatient(), date);
+
+                String subject = "Your appointment has been rescheduled";
+                String body = String.format(
+                        "<h3>Dear %s,</h3>" +
+                                "<p>Your appointment on <strong>%s</strong> could not be rescheduled due to updated working hours.</p>" +
+                                "<p>We have added you to the <strong>waiting list</strong> for that day.</p>" +
+                                "<p>You will be notified immediately if a slot becomes available.</p>" +
+                                "<p>Thank you for your understanding.</p>",
+                        app.getPatient().getName(),
+                        date
+                );
                 notificationService.sendEmail(app.getPatient().getEmail(), subject, body);
                 appointmentService.cancelWithoutNotify(app);
             }
@@ -144,10 +173,10 @@ public class ClinicService {
     /**
      * Adds a patient to the waiting list of a clinic.
      */
-    public void addToWaitingList(Clinic clinic, Patient patient) throws SQLException {
-        WaitingList x = new WaitingList(patient, clinic);
-        clinic.getWaitingList().add(x);
-        waitingListDAO.add(x);
+    public void addToWaitingList(Clinic clinic, Patient patient, LocalDate date) throws SQLException {
+        WaitingList entry = new WaitingList(patient, clinic, date);
+        clinic.getWaitingList().add(entry);
+        waitingListDAO.add(entry);
     }
 
     /**

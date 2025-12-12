@@ -54,7 +54,6 @@ public class PractitionerAppointmentsController {
             appointmentsTable.getItems().setAll(apps);
             cancelAllBtn.setDisable(apps.isEmpty());
 
-            // Setup columns
             timeCol.setCellValueFactory(data ->
                     new javafx.beans.property.SimpleStringProperty(
                             data.getValue().getAppointmentDateTime().getStartTime()
@@ -74,7 +73,6 @@ public class PractitionerAppointmentsController {
                     )
             );
 
-            // زرار "إلغاء" لكل موعد
             actionCol.setCellFactory(col -> new TableCell<>() {
                 private final Button cancelBtn = new Button("Cancel");
                 {

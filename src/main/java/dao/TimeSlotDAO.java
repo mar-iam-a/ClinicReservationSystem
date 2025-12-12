@@ -58,12 +58,11 @@ public class TimeSlotDAO implements GenericDAO<TimeSlot> {
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
                         int generatedId = rs.getInt(1);
-                        timeSlot.setId(generatedId); // ✅ حفظ الـ ID في الـ object
-                        return; // ✅ خروج ناجح — بدون Exception
+                        timeSlot.setId(generatedId);
+                        return;
                     }
                 }
             }
-            // فقط لو مفيش rows أو مفيش ID → نلقى Exception
             throw new SQLException("Failed to insert TimeSlot: no rows affected or ID not generated.");
         } finally {
             if (ps != null) ps.close();
@@ -255,9 +254,9 @@ public class TimeSlotDAO implements GenericDAO<TimeSlot> {
             if (rs.next()) {
                 boolean isBooked = rs.getBoolean("is_booked");
                 boolean isCancelled = rs.getBoolean("is_cancelled");
-                return !isBooked && !isCancelled; // متاح لو مش محجوز ومش ملغى
+                return !isBooked && !isCancelled;
             }
-            return false; // مش موجود
+            return false;
 
         } finally {
             if (rs != null) rs.close();

@@ -255,7 +255,6 @@ public class AppointmentDAO implements GenericDAO<Appointment> {
         return ids;
     }
 
-    // هل توجد حجوزات مستقبلية في فترة زمنية محددة بيوم معين؟
     public boolean hasUpcomingAppointmentsInRule(int clinicId, DayOfWeek day, LocalTime from, LocalTime to) throws SQLException {
         String sql = """
         SELECT 1 FROM Appointments a
@@ -269,8 +268,7 @@ public class AppointmentDAO implements GenericDAO<Appointment> {
         LIMIT 1
         """;
 
-        // تحويل DayOfWeek (Mon=1 → Sun=7) إلى DAYOFWEEK (Sun=1 → Sat=7)
-        int sqlDay = (day.getValue() % 7) + 1; // Mon(1) → 2, Sun(7) → 1
+        int sqlDay = (day.getValue() % 7) + 1;
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -280,10 +278,9 @@ public class AppointmentDAO implements GenericDAO<Appointment> {
             ps.setTime(3, Time.valueOf(from));
             ps.setTime(4, Time.valueOf(to));
 
-            return ps.executeQuery().next(); // true إذا وُجدت حجوزات
+            return ps.executeQuery().next();
         }
     }
-    // ✅ جديدة: جلب كل المواعيد (غير الملغاة) لعيادة محددة في يوم محدد
     public List<Appointment> getAppointmentsByClinicIdAndDate(int clinicId, LocalDate date) throws SQLException {
         String sql = """
         SELECT * FROM Appointments a
@@ -318,9 +315,7 @@ public class AppointmentDAO implements GenericDAO<Appointment> {
         }
     }
 
-    /**
-     * جلب آخر كشف (VISIT) مكتمل للمريض مع دكتور معين
-     */
+
     public Appointment getLastCompletedVisit(int patientId, int doctorId) throws SQLException {
         String sql = """
         SELECT a.*, ts.id AS timeslot_id, ts.clinic_id AS ts_clinic_id, ts.date, ts.day, ts.start_time, ts.end_time, ts.is_booked, ts.is_cancelled
@@ -343,7 +338,6 @@ public class AppointmentDAO implements GenericDAO<Appointment> {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                // ★★ إنشاء الـ TimeSlot بنفس الـ constructor اللي في TimeSlotDAO ★★
                 TimeSlot timeSlot = new TimeSlot(
                         rs.getInt("timeslot_id"),
                         rs.getInt("ts_clinic_id"),
@@ -363,7 +357,6 @@ public class AppointmentDAO implements GenericDAO<Appointment> {
                         Status.valueOf(rs.getString("status"))
                 );
 
-                // تعيين النوع و expiry
                 String typeStr = rs.getString("appointment_type");
                 appointment.setAppointmentType(
                         "CONSULTATION".equals(typeStr) ?

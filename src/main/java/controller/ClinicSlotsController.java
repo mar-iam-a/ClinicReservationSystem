@@ -150,7 +150,6 @@ public class ClinicSlotsController {
                         .anyMatch(rule -> rule.getDay() == date.getDayOfWeek());
 
                 if (isWorking) {
-                    // 🟢 كل السلوتس محجوزة — أظهر زر الانضمام لقائمة الانتظار
                     Label msgLabel = new Label("No slots available — all booked.");
                     msgLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;");
 
@@ -165,13 +164,11 @@ public class ClinicSlotsController {
                     slotsContainer.getChildren().add(box);
 
                 } else {
-                    // 🔴 الطبيب مش شغال في هذا اليوم
                     Label label = new Label("Doctor not working on selected date.");
                     label.setStyle("-fx-font-size: 16px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;");
                     slotsContainer.getChildren().add(label);
                 }
             }else {
-                // ✅ ★★ هذا هو السطر المفقود ★★
                 availableForDay.forEach(slot -> slotsContainer.getChildren().add(createSlotCard(slot)));
             }
 
@@ -281,7 +278,6 @@ public class ClinicSlotsController {
                     try {
                         AppointmentDAO appDAO = new AppointmentDAO();
 
-                        // ✅ التحقق: هل المريض عنده موعد سابق في نفس اليوم مع نفس العيادة؟
                         LocalDate selectedDate = slot.getDate();
                         List<Appointment> todayAppointments = appDAO.getAppointmentsByPatientId(currentPatient.getID());
 
@@ -305,15 +301,12 @@ public class ClinicSlotsController {
                             return;
                         }
 
-                        // ✅ لو مش محجوز — استمر في الحجز
                         Appointment newAppointment = new Appointment(currentPatient, selectedClinic, slot);
 
-                        // ... (باقي الكود زي ما هو: نوع الاستشارة، expiry، الحفظ، إلخ)
                         appDAO.add(newAppointment);
 
                         Platform.runLater(() -> {
                             showAlert("Success", "Appointment booked!", Alert.AlertType.INFORMATION);
-                            // ... التوجيه لشاشة المريض
                         });
 
                     } catch (Exception ex) {
@@ -350,8 +343,7 @@ public class ClinicSlotsController {
             Parent root = loader.load();
 
             PatientController controller = loader.getController();
-            // ★★ هذا هو السر ★★
-            controller.setPatient(this.currentPatient); // ← مرّر نفس المريض اللي جاي من Dashboard
+            controller.setPatient(this.currentPatient);
 
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));

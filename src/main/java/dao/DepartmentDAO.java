@@ -138,7 +138,6 @@ public class DepartmentDAO implements GenericDAO<Department> {
         }
     }
     public int getDepartmentIdByName(String specialtyName) throws SQLException {
-        // الاستعلام لجلب ID التخصص باستخدام اسمه
         String sql = "SELECT id FROM Departments WHERE name = ?";
         Connection con = null;
         PreparedStatement ps = null;
@@ -147,20 +146,16 @@ public class DepartmentDAO implements GenericDAO<Department> {
         try {
             con = DBConnection.getConnection();
             ps = con.prepareStatement(sql);
-            // تعيين قيمة اسم التخصص للاستعلام
             ps.setString(1, specialtyName);
             rs = ps.executeQuery();
 
             if (rs.next()) {
-                // إذا وجدنا نتيجة، نُرجع الـ ID
                 return rs.getInt("id");
             }
 
-            // إذا لم نجد التخصص، نُرجع قيمة تدل على عدم وجوده
             return -1;
 
         } finally {
-            // إغلاق الموارد
             if (rs != null) rs.close();
             if (ps != null) ps.close();
             DBConnection.closeConnection(con);

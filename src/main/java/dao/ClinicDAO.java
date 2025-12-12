@@ -24,7 +24,6 @@ public class ClinicDAO implements GenericDAO<Clinic> {
             }
         }
 
-        // ✅ doctor_id و doctor_name من الـ JOIN
         int doctorID = rs.getInt("doctor_id");
         String doctorName = rs.getString("doctor_name");
 
@@ -39,7 +38,6 @@ public class ClinicDAO implements GenericDAO<Clinic> {
 
         clinic.setDoctorID(doctorID);
         clinic.setDoctorName(doctorName != null ? doctorName : "—");
-        // ⚠️ لا تستخدم deptName هنا — هتتحل في الـ Controller
         clinic.setConsultationPrice(rs.getDouble("consultation_price"));
         clinic.setConsultationDurationDays(rs.getInt("consultation_duration_days"));
 
@@ -139,8 +137,8 @@ public class ClinicDAO implements GenericDAO<Clinic> {
             ps.setString(2, clinic.getName());
             ps.setString(3, clinic.getAddress());
             ps.setDouble(4, clinic.getPrice());
-            ps.setDouble(5, clinic.getConsultationPrice());           // ✅
-            ps.setInt(6, clinic.getConsultationDurationDays());       // ✅
+            ps.setDouble(5, clinic.getConsultationPrice());
+            ps.setInt(6, clinic.getConsultationDurationDays());
             if (clinic.getSchedule() == null) {
                 ps.setNull(7, Types.INTEGER);
             } else {
@@ -163,7 +161,6 @@ public class ClinicDAO implements GenericDAO<Clinic> {
         }
     }
 
-    // ----------------- get clinic by practitioner -----------------
     public Clinic getClinicByPractitionerId(int practitionerId) throws SQLException {
         String sql = """
             SELECT 
@@ -179,7 +176,6 @@ public class ClinicDAO implements GenericDAO<Clinic> {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Clinic clinic = extractClinicFromResultSet(rs);
-                    // ✅ لو محتاج تحمل الـ schedule كمان:
                     if (clinic.getSchedule() == null && rs.getInt("schedule_id") > 0) {
                         clinic.setSchedule(scheduleDAO.getById(rs.getInt("schedule_id")));
                     }
@@ -207,10 +203,7 @@ public class ClinicDAO implements GenericDAO<Clinic> {
         }
         return clinics;
     }
-    /**
-     * Loads the pending schedule for a clinic (if pending_schedule_id is set).
-     * Does NOT replace the active schedule — only sets clinic.setPendingSchedule().
-     */
+
     public void loadPendingSchedule(Clinic clinic) throws SQLException {
         if (clinic == null || clinic.getID() <= 0) return;
 
@@ -225,7 +218,6 @@ public class ClinicDAO implements GenericDAO<Clinic> {
                     if (!rs.wasNull() && pendingScheduleId > 0) {
                         Schedule pending = new ScheduleDAO().getById(pendingScheduleId);
                         if (pending != null) {
-                            // تحميل قواعد العمل الخاصة بالـ pending schedule
                             List<WorkingHoursRule> rules = new WorkingHoursRuleDAO().getByScheduleId(pendingScheduleId);
                             pending.setWeeklyRules(rules);
                             clinic.setPendingSchedule(pending);
@@ -240,11 +232,6 @@ public class ClinicDAO implements GenericDAO<Clinic> {
         }
     }
 
-    /**
-     * Updates only the pending_schedule_id for a clinic.
-     * @param clinicId ID of the clinic
-     * @param pendingScheduleId ID of the new pending schedule (null to clear)
-     */
     public void updatePendingScheduleId(int clinicId, Integer pendingScheduleId) throws SQLException {
         String sql = "UPDATE Clinics SET pending_schedule_id = ? WHERE id = ?";
         try (Connection con = DBConnection.getConnection();

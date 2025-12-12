@@ -11,10 +11,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author
- */
+
 public class PractitionerDAO implements GenericDAO<Practitioner> {
    // private static final String TABLE_NAME = "practitioners";
     private final ClinicDAO clinicDAO = new ClinicDAO();
@@ -57,9 +54,8 @@ public class PractitionerDAO implements GenericDAO<Practitioner> {
             ps.setString(2, practitioner.getPhone());
             ps.setString(3, practitioner.getEmail());
             ps.setString(4, practitioner.getPassword());
-            ps.setString(5, practitioner.getGender());  // ← 5: gender
-            ps.setDate(6, java.sql.Date.valueOf(practitioner.getDateOfBirth()));  // ← 6: dob
-            // ← 7: clinic_id
+            ps.setString(5, practitioner.getGender());
+            ps.setDate(6, java.sql.Date.valueOf(practitioner.getDateOfBirth()));
             if (practitioner.getClinic() == null) {
                 ps.setNull(7, Types.INTEGER);
             } else {
@@ -200,15 +196,12 @@ public class PractitionerDAO implements GenericDAO<Practitioner> {
             DBConnection.closeConnection(con);
         }
     }
-    // 🚨 الدالة المطلوبة: جلب قائمة الأطباء الذين لديهم محادثات مع المريض (لشاشة الشات)
-// =================================================================================
+
     public List<Practitioner> getPractitionersByPatientId(int patientId) throws SQLException {
 
         String sql = "SELECT DISTINCT p.* FROM Practitioners p " +
                 "INNER JOIN Messages m ON " +
-                // الحالة الأولى: الطبيب هو المرسل والمريض هو المستقبل
                 "((m.sender_type = 'PRACTITIONER' AND m.sender_id = p.id AND m.receiver_id = ?) " +
-                // الحالة الثانية: المريض هو المرسل والطبيب هو المستقبل
                 "OR (m.sender_type = 'PATIENT' AND m.receiver_id = p.id AND m.sender_id = ?))";
 
         List<Practitioner> practitioners = new ArrayList<>();
@@ -220,14 +213,12 @@ public class PractitionerDAO implements GenericDAO<Practitioner> {
             con = DBConnection.getConnection();
             ps = con.prepareStatement(sql);
 
-            // تمرير ID المريض مرتين: مرة للمستقبل ومرة للمرسل
             ps.setInt(1, patientId);
             ps.setInt(2, patientId);
 
             rs = ps.executeQuery();
 
             while (rs.next()) {
-                // استخدام دالة الاستخراج الموجودة لديكِ
                 practitioners.add(extractPractitionerFromResultSet(rs));
             }
             return practitioners;
@@ -237,7 +228,6 @@ public class PractitionerDAO implements GenericDAO<Practitioner> {
             DBConnection.closeConnection(con);
         }
     }
-    // DoctorDAO.java
     public boolean isNameTaken(String name, int excludeDoctorId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM Practitioners WHERE name = ? AND id != ?";
         try (Connection conn = DBConnection.getConnection();
@@ -249,27 +239,5 @@ public class PractitionerDAO implements GenericDAO<Practitioner> {
             }
         }
     }
-    // جلب الأطباء اللي عند المريض محادثات معهم (مرتبين حسب أحدث رسالة)
-   /* public List<Practitioner> getPractitionersWithChatsForPatient(int patientId) throws SQLException {
-        String sql = """
-        SELECT DISTINCT p.* 
-        FROM Practitioners p
-        INNER JOIN Chats c ON (c.practitioner_id = p.id AND c.patient_id = ?)
-        LEFT JOIN Messages m ON m.chat_id = c.id
-        ORDER BY m.timestamp DESC, c.id DESC
-        """;
-
-        List<Practitioner> result = new ArrayList<>();
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, patientId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(extractPractitionerFromResultSet(rs));
-                }
-            }
-        }
-        return result;
-    }*/
 
 }

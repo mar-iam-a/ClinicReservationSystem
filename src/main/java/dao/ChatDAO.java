@@ -51,7 +51,7 @@ public class ChatDAO implements GenericDAO<Chat> {
 
     public List<Chat> getChatsByPatientId(int patientId) throws SQLException {
         List<Chat> chats = new ArrayList<>();
-        String sql = "SELECT * FROM Chats WHERE patient_id = ? ORDER BY id DESC"; // ✅ تم التصحيح
+        String sql = "SELECT * FROM Chats WHERE patient_id = ? ORDER BY id DESC";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, patientId);
@@ -66,7 +66,7 @@ public class ChatDAO implements GenericDAO<Chat> {
 
     public List<Chat> getChatsByPractitionerId(int practitionerId) throws SQLException {
         List<Chat> chats = new ArrayList<>();
-        String sql = "SELECT * FROM Chats WHERE practitioner_id = ? ORDER BY id DESC"; // ✅ تم التصحيح
+        String sql = "SELECT * FROM Chats WHERE practitioner_id = ? ORDER BY id DESC";
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, practitionerId);
@@ -162,7 +162,7 @@ public class ChatDAO implements GenericDAO<Chat> {
      */
     public List<Chat> getChatsByPatientIdAndPractitionerId(int patientId, int practitionerId) throws SQLException {
         List<Chat> chats = new ArrayList<>();
-        String sql = "SELECT * FROM Chats WHERE patient_id = ? AND practitioner_id = ? ORDER BY id DESC"; // ✅ تم التصحيح
+        String sql = "SELECT * FROM Chats WHERE patient_id = ? AND practitioner_id = ? ORDER BY id DESC";
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {

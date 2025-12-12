@@ -28,13 +28,10 @@ public class HomeController {
     @FXML
     private void handleLogin(ActionEvent event) {
         try {
-            // Load Login.fxml
             Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
 
-            // Get current stage
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
-            // Set new scene
             stage.setScene(new Scene(root));
             stage.setTitle("Login - Clinic Reservation System");
         } catch (IOException e) {
@@ -51,7 +48,7 @@ public class HomeController {
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.setTitle("Create Account");
-           // stage.show();;
+           // stage.show();
         } catch (IOException e) {
             e.printStackTrace();
             showAlert("Error", "Could not load Register page.");
@@ -78,7 +75,6 @@ public class HomeController {
         }
     }
 
-    // ✅ Hover Effects
     @FXML
     private void onHoverIn(javafx.scene.input.MouseEvent event) {
         Button btn = (Button) event.getSource();

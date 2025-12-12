@@ -44,7 +44,6 @@ import javafx.application.Platform;
 
 
 public class DoctorController {
-    @FXML private Label patientNameLabel;
     @FXML private Label clinicNameLabel;
     @FXML private Label specialtyLabel;
     @FXML private Label addressLabel;
@@ -53,7 +52,7 @@ public class DoctorController {
     @FXML private Label welcomeLabel;
     @FXML private Button editButton;
     @FXML private Button logoutButton;
-    @FXML private Label debugLabel;  // ← أضف هذا السطر مع باقي الـ @FXML
+    @FXML private Label debugLabel;
     @FXML private VBox clinicInfoBox;
     @FXML private VBox appointmentsBox;
     @FXML private VBox appointmentsList;
@@ -131,7 +130,7 @@ public class DoctorController {
             List<Rating> ratings = new RatingDAO().getRatingsByClinicId(clinic.getID());
             System.out.println("Found " + ratings.size() + " rating(s) for clinic ID: " + clinic.getID());
             for (Rating r : ratings) {
-                int score = r.getScore(); // ← تأكدي أن الدالة اسمها getScore()
+                int score = r.getScore();
                 System.out.println(" Score: " + score + ", Comment: " + r.getComment());
                 total += score;
                 count++;
@@ -285,13 +284,13 @@ public class DoctorController {
             new Alert(Alert.AlertType.ERROR, "Error loading appointments.").show();
         }
     }
-    //
+
     private void populateCalendarWithAppointments(List<Appointment> apps) {
         Set<LocalDate> datesWithAppointments = apps.stream()
                 .map(Appointment::getAppointmentDateTime)
                 .filter(Objects::nonNull)
                 .map(TimeSlot::getDate)
-                .filter(d -> !d.isBefore(LocalDate.now())) // فقط الأيام الحالية والمستقبلية
+                .filter(d -> !d.isBefore(LocalDate.now()))
                 .collect(Collectors.toSet());
 
         appointmentsCalendar.setDayCellFactory(dp -> new DateCell() {
@@ -305,10 +304,10 @@ public class DoctorController {
 
                 if (datesWithAppointments.contains(item)) {
                     setStyle("-fx-background-color: #d0f0d0; -fx-text-fill: #2e7d32;");
-                    //setDisable(false);
+                    setDisable(false);
                 } else {
                     setStyle("-fx-background-color: #f0f0f0; -fx-text-fill: #aaa;");
-                    //setDisable(true);
+                    setDisable(true);
                 }
             }
         });
@@ -316,7 +315,7 @@ public class DoctorController {
         if (!datesWithAppointments.isEmpty()) {
             LocalDate first = datesWithAppointments.stream().min(LocalDate::compareTo).orElse(null);
             appointmentsCalendar.setValue(first);
-            displayAppointments(allAppointments, first); // عرض مواعيد أول يوم
+            displayAppointments(allAppointments, first);
         } else {
             appointmentsCalendar.setValue(null);
             displayAppointments(allAppointments, null);
@@ -362,7 +361,6 @@ public class DoctorController {
         box.setMinHeight(50);
         box.setPadding(new Insets(8, 12, 8, 12));
 
-        // ✅ لون الخلفية حسب الحالة
         String bgColor, borderColor;
         switch (a.getStatus()) {
             case Cancelled_by_Patient:
@@ -374,7 +372,7 @@ public class DoctorController {
                 bgColor = "#f6fef9";
                 borderColor = "#d5f5e3";
                 break;
-            case Absent: // ← دعم الحالة الجديدة في العرض (لو مستخدمة)
+            case Absent:
                 bgColor = "#fef9e7";
                 borderColor = "#f9e79f";
                 break;
@@ -417,7 +415,7 @@ public class DoctorController {
             expiryLabel = new Label("⏳ Valid until: " +
                     a.getConsultationExpiryDate().format(DateTimeFormatter.ofPattern("dd/MM")));
             expiryLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #888;");
-            box.getChildren().add(expiryLabel); // ← إضافته هنا كافية
+            box.getChildren().add(expiryLabel);
         }
 
         Region spacer = new Region();
@@ -439,12 +437,10 @@ public class DoctorController {
                 a.setStatus(Status.Completed);
                 try {
                     new AppointmentDAO().updateStatus(a.getId(), a.getStatus());
-                    // تحديث العرض: غير اللون، وأعد رسم الحالة
                     Platform.runLater(() -> {
                         box.setStyle(box.getStyle().replace(bgColor, "#f6fef9").replace(borderColor, "#d5f5e3"));
                         statusLabel.setText("📌 " + a.getStatus());
                         statusLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #2E7D32;");
-                        // إخفاء الزرارين بعد التحديث
                         box.getChildren().remove(completeBtn);
                         if (box.getChildren().contains(spacer)) {
                             int idx = box.getChildren().indexOf(spacer);
@@ -462,7 +458,6 @@ public class DoctorController {
                 }
             });
 
-            // زر "Mark as Absent"
             Button absentBtn = new Button("✖️ Absent");
             absentBtn.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white; " +
                     "-fx-font-size: 11px; -fx-padding: 3 8; -fx-background-radius: 4;");
@@ -474,7 +469,6 @@ public class DoctorController {
                         box.setStyle(box.getStyle().replace(bgColor, "#fef9e7").replace(borderColor, "#f9e79f"));
                         statusLabel.setText("📌 " + a.getStatus());
                         statusLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #FF8F00;");
-                        // إخفاء الزرارين
                         box.getChildren().remove(completeBtn);
                         box.getChildren().remove(absentBtn);
                     });
@@ -496,7 +490,7 @@ public class DoctorController {
         }
         box.getChildren().addAll(
                 patientLabel,
-                new Region(), // مسافة صغيرة
+                new Region(),
                 timeLabel,
                 new Region(),
                 statusLabel
@@ -509,8 +503,7 @@ public class DoctorController {
         box.getChildren().addAll(spacer, cancelBtn);
 
         return box;
-//        box.getChildren().addAll(spacer, cancelBtn);
-//        return box;
+
     }
     @FXML
     private void filterAppointmentsByDate() {
@@ -595,7 +588,6 @@ public class DoctorController {
                 stars.getChildren().add(star);
             }
 
-            // التعليق
             String comment = r.getComment();
             Label commentLabel;
             if (comment == null || comment.trim().isEmpty()) {
@@ -607,7 +599,6 @@ public class DoctorController {
             }
             commentLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #555;");
 
-            // التاريخ
             Label dateLabel = new Label("📅 " + r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
             dateLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #888;");
 
@@ -621,7 +612,6 @@ public class DoctorController {
         dialog.setTitle("Rate " + clinic.getName());
         dialog.setHeaderText("Share your experience with this clinic");
 
-        // Set custom style for the dialog
         dialog.getDialogPane().setStyle(
                 "-fx-background-color: #F8F9FA; " +
                         "-fx-border-color: #DDD; " +
@@ -640,7 +630,7 @@ public class DoctorController {
     private void handleCancelAllForSelectedDate() {
         LocalDate selectedDate = appointmentsCalendar.getValue();
         if (selectedDate == null) {
-            new Alert(Alert.AlertType.WARNING, "يرجى اختيار يوم من التقويم أولًا.").show();
+            new Alert(Alert.AlertType.WARNING, "select day from calender ! ").show();
             return;
         }
 
@@ -660,7 +650,6 @@ public class DoctorController {
                             currentDoctor, selectedDate, "اعتذار من العيادة"
                     );
                     new Alert(Alert.AlertType.INFORMATION, "✅ تم إلغاء " + count + " مواعيد.").show();
-                    // إعادة تحميل المواعيد
                     allAppointments = new AppointmentDAO().getAppointmentsByClinicId(currentDoctor.getClinic().getID());
                     displayAppointments(allAppointments, selectedDate);
                 } catch (Exception ex) {
@@ -680,10 +669,8 @@ public class DoctorController {
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    // 1️⃣ إلغاء الحجز عبر الخدمة (يُحدّث الحالة في قاعدة البيانات)
                     practitionerService.cancelAppointmentAsPractitioner(a.getId(), "Cancellation by doctor");
 
-                    // 2️⃣ ✅ إرسال إيميل عبر NotificationService (مضمون ويدعم HTML)
                     Patient patient = a.getPatient();
                     TimeSlot slot = a.getAppointmentDateTime();
                     if (patient != null && patient.getEmail() != null && !patient.getEmail().trim().isEmpty() && slot != null) {
@@ -706,7 +693,6 @@ public class DoctorController {
                         notificationService.sendEmail(patient.getEmail(), subject, body);
                     }
 
-                    // 3️⃣ تحديث العرض
                     new Alert(Alert.AlertType.INFORMATION, "✅ Appointment cancelled successfully.").show();
                     allAppointments = new AppointmentDAO().getAppointmentsByClinicId(currentDoctor.getClinic().getID());
                     LocalDate selectedDate = appointmentsCalendar.getValue();
@@ -749,7 +735,6 @@ public class DoctorController {
             new Alert(Alert.AlertType.ERROR, "Failed to export PDF: " + ex.getMessage()).show();
         }
     }
-    // ✅ دالة آمنة لفتح الملف بعد التأكد من وجوده
     private void openFileSafely(String fileName) {
         java.io.File file = new java.io.File(fileName);
         if (file.exists() && file.isFile()) {
@@ -776,32 +761,26 @@ public class DoctorController {
                 return;
             }
 
-            // ✅ جلب البيانات
             int clinicId = currentDoctor.getClinic().getID();
             List<Appointment> allAppointments = new AppointmentDAO().getAllAppointmentsForReport(clinicId);
             List<Rating> ratings = new RatingDAO().getRatingsByClinicId(clinicId);
 
-            // ✅ إخفاء كل البوكسات
             clinicInfoBox.setVisible(false);
             appointmentsBox.setVisible(false);
             reviewsBox.setVisible(false);
-            // reportBox سيكون visible أدناه
 
-            // ✅ عرض التقرير في reportBox (لو موجود)، أو تهيئته أول مرة
             if (reportBox == null) {
                 showAlert("Error", "Report box is not initialized. Check FXML.");
                 return;
             }
 
-            // ✅ ملء المحتوى
             reportContent.getChildren().clear();
 
-            // 📊 عنوان
             Label header = new Label("📊 Doctor Full Report");
             header.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #15BF8F;");
             reportContent.getChildren().add(header);
 
-            // 📊 إحصائيات
+            // statistics
             long total = allAppointments.size();
             long completed = allAppointments.stream().filter(a -> a.getStatus() == Status.Completed).count();
             long cancelledByPatient = allAppointments.stream().filter(a -> a.getStatus() == Status.Cancelled_by_Patient).count();
@@ -820,7 +799,6 @@ public class DoctorController {
             );
             reportContent.getChildren().add(statsBox);
 
-            // 📋 جدول المواعيد (مختصر)
             Label apptLabel = new Label("📋 Appointments (" + total + " total)");
             apptLabel.setStyle("-fx-font-weight: bold;");
             reportContent.getChildren().add(apptLabel);
@@ -834,7 +812,6 @@ public class DoctorController {
                 card.setPadding(new Insets(5));
                 card.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-radius: 4;");
 
-                // لون الخلفية حسب الحالة
                 String color = switch (a.getStatus()) {
                     case Completed -> "#e8f5e9";
                     case Cancelled_by_Patient, Cancelled_by_Doctor -> "#ffebee";
@@ -855,7 +832,6 @@ public class DoctorController {
             apptScroll.setPrefHeight(200);
             reportContent.getChildren().add(apptScroll);
 
-            // ⭐ التقييمات
             if (!ratings.isEmpty()) {
                 Label ratingLabel = new Label("⭐ Patient Ratings (" + ratings.size() + ")");
                 ratingLabel.setStyle("-fx-font-weight: bold;");
@@ -880,7 +856,6 @@ public class DoctorController {
                 reportContent.getChildren().add(new ScrollPane(ratingList));
             }
 
-            // 🖨️ أزرار التصدير في الأسفل
             HBox exportButtons = new HBox(10);
             exportButtons.setAlignment(Pos.BOTTOM_RIGHT);
 
@@ -896,13 +871,12 @@ public class DoctorController {
             backBtn.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 5 15; -fx-background-radius: 6;");
             backBtn.setOnAction(e -> {
                 reportBox.setVisible(false);
-                clinicInfoBox.setVisible(true); // أو أي بوx تريدينه أول ما يرجع
+                clinicInfoBox.setVisible(true);
             });
 
             exportButtons.getChildren().addAll(pdfBtn, excelBtn, backBtn);
             reportContent.getChildren().add(exportButtons);
 
-            // ✅ إظهار التقرير
             reportBox.setVisible(true);
 
         } catch (Exception e) {
@@ -912,7 +886,6 @@ public class DoctorController {
     }
     private void exportFullReport(String type, List<Appointment> appointments, List<Rating> ratings) {
         try {
-            // ✅ نستخدم نفس الدوال اللي عندك أصلاً (exportToExcel + exportAppointmentsToPDF)
             String fileName = "Doctor_Full_Report_" + LocalDate.now() + "." + (type.equals("PDF") ? "pdf" : "xlsx");
 
             if ("PDF".equals(type)) {

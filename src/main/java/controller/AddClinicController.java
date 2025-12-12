@@ -76,7 +76,6 @@ public class AddClinicController {
     private int slotDuration;
     private Integer tempScheduleId = null;
 
-    /** Set current logged doctor data */
     public void setDoctor(Practitioner doctor) {
         this.currentDoctor = doctor;
     }

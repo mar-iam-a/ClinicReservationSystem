@@ -13,7 +13,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
     private final PatientDAO patientDAO = new PatientDAO();
     private final ClinicDAO clinicDAO = new ClinicDAO();
 
-    // ★★ التعديل 1: استخراج كائن WaitingList من ResultSet مع دعم `date` و `WaitingStatus` ★★
     private WaitingList extractWaitingListFromResultSet(ResultSet rs) throws SQLException {
         int id = rs.getInt("id");
         int patientId = rs.getInt("patient_id");
@@ -29,7 +28,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         return new WaitingList(id, patient, clinic, date, requestTime, status);
     }
 
-    // ★★ التعديل 2: جلب أول مريض في قائمة الانتظار ليوم محدد ★★
     public WaitingList getFirstPendingForDate(int clinicId, LocalDate date) throws SQLException {
         String sql = """
             SELECT * FROM WaitingList 
@@ -49,7 +47,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         }
     }
 
-    // ★★ التعديل 3: وجود طلب انتظار نشط ليوم محدد ★★
     public boolean existsPendingRequest(int patientId, int clinicId, LocalDate date) throws SQLException {
         String sql = """
             SELECT 1 FROM WaitingList 
@@ -69,7 +66,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         }
     }
 
-    // ★★ التعديل 4: طلبات المريض (محدّثة) ★★
     public List<WaitingList> getPatientPendingRequests(int patientId) throws SQLException {
         String sql = """
             SELECT * FROM WaitingList 
@@ -90,7 +86,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         return list;
     }
 
-    // ★★ التعديل 5: insert مع `date` ★★
     @Override
     public void add(WaitingList item) throws SQLException {
         String sql = """
@@ -117,7 +112,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         }
     }
 
-    // ★★ التعديل 6: update مع `date` و `WaitingStatus` ★★
     @Override
     public void update(WaitingList item) throws SQLException {
         String sql = """
@@ -139,7 +133,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         }
     }
 
-    // ★★ باقي الدوال (unchanged تقريبًا) ★★
     @Override
     public WaitingList getById(int id) throws SQLException {
         String sql = "SELECT * FROM WaitingList WHERE id = ?";
@@ -179,7 +172,6 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         }
     }
 
-    // ★★ دالة إضافية مفيدة: تغيير حالة مجموعة من الطلبات ★★
     public void expireAllOfferedOlderThan(LocalDateTime threshold) throws SQLException {
         String sql = """
             UPDATE WaitingList 

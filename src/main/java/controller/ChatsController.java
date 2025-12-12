@@ -272,7 +272,7 @@ public class ChatsController implements Initializable {
         });
     }
 
-    // ==================== SENDING MESSAGES ====================
+
     @FXML
     public void sendMessage() {
         String text = messageField.getText().trim();
@@ -315,7 +315,6 @@ public class ChatsController implements Initializable {
         }
     }
 
-    // ==================== HELPERS ====================
     private void showError(String title, String msg) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);

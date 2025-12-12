@@ -52,14 +52,13 @@ public class LoginController {
         }
 
         try {
-            boolean isPhone = input.matches("^01[0-25]\\d{8}$"); // 010, 011, 012, 015 + 8 أرقام
+            boolean isPhone = input.matches("^01[0-25]\\d{8}$");
             boolean isEmail = input.contains("@") && input.contains(".");
 
             if (!isPhone && !isEmail) {
                 showAlert("Invalid Input", "Please enter a valid Email or Egyptian Phone Number (e.g., 01012345678).");
                 return;
             }
-            // ---------------- Patient Login ----------------
             for (Patient p : patientService.getAllPatients()) {
                 if (p.getEmail().equalsIgnoreCase(input) && p.getPassword().equals(password)) {
                     loadPatientDashboard(p, event);
@@ -71,11 +70,9 @@ public class LoginController {
                 }
             }
 
-            // ---------------- Practitioner Login ----------------
             for (Practitioner d : practitionerService.getAllPractitioners()) {
                 if (d.getEmail().equalsIgnoreCase(input) && d.getPassword().equals(password)) {
 
-                    // get clinic for practitioner
                     Clinic clinic = clinicService.getClinicByPractitionerId(d.getId());
 
                     if (clinic != null) {
@@ -185,7 +182,6 @@ public class LoginController {
         try {
             String password = null;
 
-            // Check in Patients
             for (Patient p : patientService.getAllPatients()) {
                 if (p.getEmail().equalsIgnoreCase(email)) {
                     password = p.getPassword();
@@ -193,7 +189,6 @@ public class LoginController {
                 }
             }
 
-            // Check in Practitioners
             if (password == null) {
                 for (Practitioner d : practitionerService.getAllPractitioners()) {
                     if (d.getEmail().equalsIgnoreCase(email)) {
@@ -208,7 +203,6 @@ public class LoginController {
                 return;
             }
 
-            // Send password via email
             NotificationService notificationService = new NotificationService();
             notificationService.sendEmail(email, "Password Recovery", "<h3>Your password is: "+password+"</h3>");
 

@@ -6,10 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-/**
- * Main class representing the Clinic Reservation System GUI.
- * Opens Home.fxml as the first screen.
- */
+
 public class ClinicReservationSystem extends Application {
 
     @Override
@@ -23,6 +20,6 @@ public class ClinicReservationSystem extends Application {
     }
 
     public static void main(String[] args) {
-        Application.launch(args); // يشغل التطبيق
+        Application.launch(args);
     }
 }

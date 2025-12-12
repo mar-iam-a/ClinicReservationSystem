@@ -19,7 +19,6 @@ public class ClinicController {
 
     private Practitioner doctor;
 
-    // ✅ استدعاء من LoginController بعد النجاح
     public void setDoctor(Practitioner doctor) {
         this.doctor = doctor;
         if (doctor != null) {

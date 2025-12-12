@@ -25,13 +25,11 @@ public class AppointmentsController {
     private final ClinicService clinicService = new ClinicService();
     private final SimpleIntegerProperty selectedRating = new SimpleIntegerProperty(0);
 
-    // Set current patient and load his appointments
     public void setPatient(Patient patient) {
         this.currentPatient = patient;
         loadPatientAppointments();
     }
 
-    // Load all appointments for the current patient
     private void loadPatientAppointments() {
         appointmentsContainer.getChildren().clear();
         if (currentPatient == null) {
@@ -54,7 +52,6 @@ public class AppointmentsController {
         }
     }
 
-    // Create a visual card for an appointment
     private HBox createAppointmentCard(Appointment appointment) {
         HBox card = new HBox(15);
         card.setPadding(new Insets(10, 15, 10, 15));
@@ -84,7 +81,6 @@ public class AppointmentsController {
         VBox rightVBox = new VBox(7);
         rightVBox.setAlignment(Pos.CENTER_RIGHT);
 
-        // Add/Update Rating Button
         String btnText = "Add Rating";
         try {
             Rating existing = new RatingDAO().getRatingByPatientAndClinic(currentPatient.getID(), clinic.getID());
@@ -105,7 +101,6 @@ public class AppointmentsController {
         Label clinicLabel = new Label(clinic.getName());
         clinicLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #555;");
 
-        // Buttons for reschedule and cancel
         Button rescheduleBtn = new Button("Reschedule");
         rescheduleBtn.setStyle("-fx-background-color: linear-gradient(#0A84FF,#0066CC); -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 10; -fx-font-size: 11px;");
         rescheduleBtn.setOnAction(e -> System.out.println("Rescheduling: " + appointment.getId()));
@@ -135,7 +130,6 @@ public class AppointmentsController {
         return card;
     }
 
-    // Show rating popup dialog for rating or updating rating
     private void showRatingDialog(Clinic clinic) {
         Rating existingRating = null;
         try {
@@ -155,7 +149,6 @@ public class AppointmentsController {
         content.setPadding(new Insets(20));
         content.setStyle("-fx-background-color: white; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 5);");
 
-        // Rating stars UI
         HBox starBox = new HBox(8);
         starBox.setAlignment(Pos.CENTER);
         Label[] stars = new Label[5];

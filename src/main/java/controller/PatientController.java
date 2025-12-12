@@ -63,7 +63,6 @@ public class PatientController {
     private final RatingService ratingService = new RatingService();
     private Parent patientDashboardView;
     private Button activeButton = null;
-    // ==================== FXML NAVIGATION ====================
     @FXML
     private void handleNavigation(ActionEvent event) {
         Button sourceButton = (Button) event.getSource();
@@ -177,7 +176,6 @@ public class PatientController {
         }
     }
 
-    // ==================== INIT & UTILS ====================
     @FXML
     public void initialize() {
         loadSpecialties();
@@ -196,9 +194,7 @@ public class PatientController {
         this.currentPatient = patient;
         System.out.println("✅ currentPatient set: " + (patient != null ? patient.getName() : "null"));
 
-        // ★★ الآن نبدأ نحمّل البيانات الشخصية ★★
         Platform.runLater(() -> {
-            // مثلاً: عرض اسم المريض في الهيدر
             if (patientNameLabel != null) {
                 patientNameLabel.setText("Hello " + patient.getName());
             }
@@ -265,13 +261,11 @@ public class PatientController {
         final String FULL_STAR = "★", EMPTY_STAR = "☆";
         final String GOLD = "#FFD700", LIGHT_GRAY = "#CCCCCC";
 
-        // تأمين القيمة بين 0 و5
         rating = Math.max(0, Math.min(5, rating));
-        double rounded = Math.round(rating * 2) / 2.0; // التقريب لنصف نجمة
+        double rounded = Math.round(rating * 2) / 2.0;
         int full = (int) rounded;
         boolean half = (rounded - full) == 0.5;
 
-        // النجوم
         for (int i = 0; i < 5; i++) {
             Text t = new Text();
             t.setFont(Font.font(16));
@@ -288,7 +282,6 @@ public class PatientController {
             container.getChildren().add(t);
         }
 
-        // الرقم بجانب النجوم
         if (rating > 0) {
             Label num = new Label(String.format(" (%.1f)", rounded));
             num.setStyle("-fx-font-size: 14px; -fx-text-fill: #555; -fx-padding: 0 0 0 3;");
@@ -348,11 +341,9 @@ public class PatientController {
                 double avgRat=ratingService.calculateAverageRating(c.getID());
                 HBox ratingView = createRatingView(avgRat);
 
-                // 2. عمل label للسعر
                 Label priceLabel = new Label(String.format(" | %.2f EGP", c.getPrice()));
                 priceLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
 
-                // 3. دمجهم في HBox واحد
                 HBox ratingAndPrice = new HBox(5, ratingView, priceLabel);
                 priceLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
                 details.getChildren().addAll(slot, ratingAndPrice);
@@ -445,13 +436,12 @@ public class PatientController {
         }
     }
 
-    // ==================== SETTINGS & PROFILE ====================
     @FXML
     private void handleSettings() {
         if (mainContentPane != null) mainContentPane.setVisible(false);
         if (settingsBox != null) {
             settingsBox.setVisible(true);
-            loadCurrentUserSettings(); // ← نستدعيها هنا بعد ما نتأكد إنه مش null
+            loadCurrentUserSettings();
         } else {
             showAlert("Error", "Settings UI not loaded.");
         }
@@ -459,7 +449,6 @@ public class PatientController {
 
     private void loadCurrentUserSettings() {
         if (currentPatient != null) {
-            // ✅ نحمل الـ name ونعرضه كـ username
             usernameField.setText(currentPatient.getName() != null ? currentPatient.getName() : "");
 
             emailField.setText(currentPatient.getEmail());
@@ -468,10 +457,8 @@ public class PatientController {
             dobField.setText(currentPatient.getDateOfBirth() != null ?
                     currentPatient.getDateOfBirth().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "—");
 
-            // ✅ نسمح بتعديل username (اللي هو name فعليًا)
             usernameField.setEditable(true);
 
-            // باقي الحقول read-only
             emailField.setEditable(false);
             phoneField.setEditable(false);
             genderField.setEditable(false);
@@ -550,7 +537,6 @@ public class PatientController {
 
         }
     }
-    // ==================== HELPERS ====================
 //    private void openGoogleMaps(String address) {
 //        if (address == null || address.trim().isEmpty()) return;
 //        try {
@@ -564,39 +550,35 @@ public class PatientController {
 //    }
     private void openGoogleMaps(String address) {
         if (address == null || address.trim().isEmpty()) {
-            showAlert("تنبيه", "العنوان فارغ. لا يمكن فتح الخريطة.");
+            showAlert("Warning", "Address is empty. Cannot open map.");
             return;
         }
 
         try {
-            // ترميز العنوان بشكل صحيح (نستخدم %20 بدل + لتوافق أفضل مع Google Maps)
             String encoded = java.net.URLEncoder.encode(address.trim(), "UTF-8")
                     .replace("+", "%20");
 
             String url = "https://www.google.com/maps/search/?api=1&query=" + encoded;
 
-            // ✅ التحقق من دعم فتح المتصفح
             if (java.awt.Desktop.isDesktopSupported()) {
                 java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
                 if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
                     desktop.browse(new java.net.URI(url));
-                    return; // نجاح
+                    return;
                 }
             }
 
-            // إذا وصلنا هنا: النظام لا يدعم فتح المتصفح
-            // نعرض الرابط للمستخدم ليفتحه يدويًا
-            String msg = "لا يمكن فتح الخريطة تلقائيًا على هذا الجهاز.\n"
-                    + "انسخ الرابط التالي والصقه في متصفحك:\n\n"
+            String msg = "Cannot open map automatically on this device.\n"
+                    + "Copy and paste the link below into your browser:\n\n"
                     + url;
-            showAlert("معلومة", msg);
+            showAlert("Info", msg);
 
         } catch (java.net.URISyntaxException e) {
-            showAlert("خطأ", "رابط غير صالح: " + e.getMessage());
+            showAlert("Error", "Invalid URL: " + e.getMessage());
         } catch (java.io.IOException e) {
-            showAlert("خطأ", "فشل فتح المتصفح: " + e.getMessage());
+            showAlert("Error", "Failed to open browser: " + e.getMessage());
         } catch (Exception e) {
-            showAlert("خطأ", "حدث خطأ غير متوقع: " + e.getMessage());
+            showAlert("Error", "Unexpected error: " + e.getMessage());
         }
     }
 
@@ -746,7 +728,7 @@ public class PatientController {
             int doctorId = a.getClinic().getDoctorID();
             clinic = clinicService.getClinicByPractitionerId(doctorId);
             if (clinic == null) {
-                // مهم: الخدمة قد تُرجع null بدل ما ترمي exception!
+
                 return new HBox(new Label("⚠️ Clinic not found for this appointment"));
             }
         } catch (Exception e) {
@@ -754,7 +736,6 @@ public class PatientController {
             return new HBox(new Label("⚠️ Failed to load clinic info"));
         }
 
-        // ✅ من هنا وأنت متأكد إن `clinic != null`
         Status status = a.getStatus();
 
         VBox card = new VBox(10);
@@ -789,7 +770,6 @@ public class PatientController {
         HBox actions = new HBox(8);
         actions.setAlignment(Pos.CENTER_LEFT);
 
-        // زر الإلغاء: يظهر فقط لو الحالة = Booked
         if (status == Status.Booked) {
             Button cancelBtn = new Button("❌ Cancel");
             cancelBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 12px;");
@@ -797,7 +777,6 @@ public class PatientController {
             actions.getChildren().add(cancelBtn);
         }
 
-        // ✅ زر التقييم: يظهر فقط لو الحالة = Completed
         if (status == Status.Completed) {
             try {
                 Rating existingRating = new RatingDAO().getRatingByPatientAndClinic(
@@ -811,7 +790,6 @@ public class PatientController {
             }
         }
 
-        // زر المتابعة لو مسموح
         if (clinic.getConsultationPrice() > 0 &&
                 (status == Status.Booked || status == Status.Completed)) {
             Button returnBtn = new Button("🔁 Request Follow-up");
@@ -826,7 +804,7 @@ public class PatientController {
     @FXML
     private void HoverNavButton(javafx.scene.input.MouseEvent e) {
         Button btn = (Button) e.getSource();
-        if (btn != activeButton) { // ما نغيرش اللون لو الزرار active
+        if (btn != activeButton) {
             btn.setStyle("-fx-background-color: linear-gradient(to bottom, #e2f5f0, #cdeee7);" +
                     "-fx-text-fill: #333; -fx-font-size: 16px; -fx-font-weight: bold;" +
                     "-fx-padding: 8 24; -fx-background-radius: 25; -fx-border-radius: 25;" +
@@ -838,7 +816,7 @@ public class PatientController {
     @FXML
     private void ResetNavButton(javafx.scene.input.MouseEvent e) {
         Button btn = (Button) e.getSource();
-        if (btn != activeButton) { // ما نرجعش اللون لو الزرار active
+        if (btn != activeButton) {
             btn.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #e8f6f3);" +
                     "-fx-text-fill: #444; -fx-font-size: 16px; -fx-font-weight: bold;" +
                     "-fx-padding: 8 24; -fx-background-radius: 25; -fx-border-radius: 25;" +
@@ -849,17 +827,14 @@ public class PatientController {
     @FXML
     private void PressNavButton(javafx.scene.input.MouseEvent e) {
         Button btn = (Button) e.getSource();
-        // نجعل الزرار active عند الضغط
         if (activeButton != null && activeButton != btn) {
-            // رجع الزرار السابق لحالته الطبيعية
             activeButton.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #e8f6f3);" +
                     "-fx-text-fill: #444; -fx-font-size: 16px; -fx-font-weight: bold;" +
                     "-fx-padding: 8 24; -fx-background-radius: 25; -fx-border-radius: 25;" +
                     "-fx-border-color: #c8d6d5; -fx-border-width: 1;" +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0.2, 0, 2);");
         }
-        activeButton = btn; // تعيين الزرار الحالي كـ active
-
+        activeButton = btn;
         btn.setStyle("-fx-background-color: linear-gradient(to bottom, #b9e5db, #9ad7cd);" +
                 "-fx-text-fill: #222; -fx-font-size: 16px; -fx-font-weight: bold;" +
                 "-fx-padding: 8 24; -fx-background-radius: 25; -fx-border-radius: 25;" +

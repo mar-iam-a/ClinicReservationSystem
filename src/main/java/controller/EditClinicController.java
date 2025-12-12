@@ -23,21 +23,18 @@ public class EditClinicController {
     @FXML private CheckBox enableConsultationCheckBox;
     @FXML private VBox consultationFieldsBox;
     @FXML private TextField consultationPriceField;
-    @FXML private TextField consultationDaysField; // ← ✅ تم تغييره من Spinner إلى TextField
+    @FXML private TextField consultationDaysField;
 
     private Clinic clinic;
     private Practitioner doctor;
 
-    // DAOs
     private final ClinicDAO clinicDAO = new ClinicDAO();
     private final ScheduleDAO scheduleDAO = new ScheduleDAO();
     private final WorkingHoursRuleDAO ruleDAO = new WorkingHoursRuleDAO();
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
 
-    // ✅ لتخزين القواعد المؤقتة (الـ UI rows)
     private final List<RuleRow> ruleRows = new ArrayList<>();
 
-    // ===== Inner Class لتمثيل سطر قاعدة في الواجهة =====
     private class RuleRow {
         final ComboBox<DayOfWeek> dayCombo;
         final ComboBox<LocalTime> fromCombo;
@@ -114,10 +111,9 @@ public class EditClinicController {
 
     @FXML
     public void initialize() {
-        // ✅ لا حاجة لـ setValueFactory لأن consultationDaysField دلوقتي TextField
+        //  لا حاجة لـ setValueFactory لأن consultationDaysField دلوقتي TextField
     }
 
-    // ===== Controller Lifecycle =====
     public void setClinic(Clinic clinic, Practitioner doctor) {
         this.clinic = clinic;
         this.doctor = doctor;
@@ -173,7 +169,6 @@ public class EditClinicController {
         rulesContainer.getChildren().add(newRow.container);
     }
 
-    // ===== Save Logic مع Validation مُحدّث =====
     @FXML
     private void onSave() {
         try {
@@ -198,13 +193,11 @@ public class EditClinicController {
                 return;
             }
 
-            // ★★ نظام الاستشارة — مع Validation جديد ★★
             boolean enableConsultation = enableConsultationCheckBox.isSelected();
             double consultationPrice = 0.0;
             int consultationDays = 0;
 
             if (enableConsultation) {
-                // ✅ قراءة السعر
                 try {
                     consultationPrice = Double.parseDouble(consultationPriceField.getText().trim());
                 } catch (NumberFormatException e) {
@@ -212,7 +205,6 @@ public class EditClinicController {
                     return;
                 }
 
-                // ✅ قراءة الأيام
                 try {
                     consultationDays = Integer.parseInt(consultationDaysField.getText().trim());
                 } catch (NumberFormatException e) {
@@ -220,7 +212,6 @@ public class EditClinicController {
                     return;
                 }
 
-                // ✅ ✅ ✅ Validation: سعر الاستشارة < سعر الكشف + الأيام ≤ 30
                 if (consultationPrice >= price) {
                     showAlert("Validation Error",
                             "❌ Consultation price must be LESS than the main visit price (" + String.format("%.2f", price) + " EGP).");
@@ -232,7 +223,6 @@ public class EditClinicController {
                 }
             }
 
-            // جمع القواعد...
             List<WorkingHoursRule> newRules = new ArrayList<>();
             for (RuleRow row : ruleRows) {
                 WorkingHoursRule r = row.getRule();
@@ -244,7 +234,6 @@ public class EditClinicController {
                 return;
             }
 
-            // إنشاء schedule جديد (Pending)
             Schedule newPending = new Schedule(0, slotDuration);
             scheduleDAO.add(newPending);
 
@@ -252,7 +241,6 @@ public class EditClinicController {
                 ruleDAO.insertRule(newPending.getID(), r.getDay(), r.getStartTime(), r.getEndTime());
             }
 
-            // ✅ تحديث العيادة (الأساسي + الاستشارة)
             clinic.setName(name);
             clinic.setAddress(address);
             clinic.setPrice(price);
@@ -260,10 +248,8 @@ public class EditClinicController {
             clinic.setConsultationDurationDays(consultationDays);
             clinicDAO.update(clinic);
 
-            // ربط الـ pending schedule
             clinicDAO.updatePendingScheduleId(clinic.getID(), newPending.getID());
 
-            // رسالة نجاح
             LocalDate nextMonthStart = LocalDate.now().plusMonths(1).withDayOfMonth(1);
             String formattedDate = nextMonthStart.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
             statusLabel.setText("✅ Saved! Changes will be active from " + formattedDate + ".");

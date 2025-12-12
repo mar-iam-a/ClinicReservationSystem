@@ -32,7 +32,6 @@ public class WaitingListController {
         if (currentPatient == null) return;
 
         try {
-            // 🚨 استدعاء الدالة الجديدة
             List<WaitingList> requests = waitingListService.getPatientWaitingList(currentPatient.getID());
 
             if (requests.isEmpty()) {
@@ -53,17 +52,17 @@ public class WaitingListController {
         card.setPadding(new Insets(10));
         card.setStyle("-fx-background-color: #F8F9FA; -fx-border-color: #E0E0E0; -fx-border-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 1);");
 
-        Label clinicName = new Label("عيادة: " + request.getClinic().getName());
+        Label clinicName = new Label("Clinic: " + request.getClinic().getName());
         clinicName.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1ABC9C;");
 
-        Label doctorName = new Label("دكتور: " + request.getClinic().getDoctorName());
+        Label doctorName = new Label("Doctor: " + request.getClinic().getDoctorName());
         doctorName.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
 
         String timeStr = request.getRequestTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        Label requestTime = new Label("وقت التسجيل: " + timeStr);
+        Label requestTime = new Label("Registration Time: " + timeStr);
         requestTime.setStyle("-fx-font-size: 12px; -fx-text-fill: #777;");
 
-        Label status = new Label("الحالة: " + request.getStatus().name());
+        Label status = new Label("Status: " + request.getStatus().name());
         status.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #F39C12;");
 
         card.getChildren().addAll(clinicName, doctorName, requestTime, status);

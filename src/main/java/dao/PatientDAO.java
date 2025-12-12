@@ -184,11 +184,9 @@ public class PatientDAO implements GenericDAO<Patient> {
             DBConnection.closeConnection(con);
         }
     }
-    // PatientDAO.java
     public boolean isNameTaken(String name, int excludePatientId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM Patients WHERE name = ? AND id != ?";
 
-        // ✅ try-with-resources: يفتح connection ويقفله تلقائيًا
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 

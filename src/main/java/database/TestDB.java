@@ -4,10 +4,6 @@
  */
 package database;
 
-/**
- *
- * @author noursameh
- */
 import java.sql.Connection;
 import java.sql.SQLException;
 

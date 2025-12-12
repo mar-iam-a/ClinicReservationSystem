@@ -150,6 +150,23 @@
                    -fx-border-width: 1;
                    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0.2, 0, 2);"
                 text="📊 Report"/>
+        <Button fx:id="waitingListNavButton" onAction="#handleViewWaitingList"
+                onMouseEntered="#hoverNavButton"
+                onMouseExited="#resetNavButton"
+                onMousePressed="#pressNavButton"
+                onMouseReleased="#hoverNavButton"
+                style="-fx-background-color: linear-gradient(to bottom, #ffffff, #e8f6f3);
+               -fx-text-fill: #444;
+               -fx-font-size: 16px;
+               -fx-font-weight: bold;
+               -fx-padding: 8 20;
+               -fx-background-radius: 25;
+               -fx-border-radius: 25;
+               -fx-border-color: #c8d6d5;
+               -fx-border-width: 1;
+               -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0.2, 0, 2);"
+                text="⏳ Waiting List"/>
+
     </HBox>
 
 

@@ -39,11 +39,10 @@ public class AppointmentService {
         return false;
     }
 
-    // ✅ إلغاء عام (يدعم التمرير)
     public void cancel(Appointment appointment, Status cancelStatus) throws SQLException {
         if (appointment == null || appointment.getAppointmentDateTime() == null) return;
 
-        appointment.setStatus(cancelStatus); // ← هنا نستخدم الـ status المرسل
+        appointment.setStatus(cancelStatus);
         appointment.getAppointmentDateTime().markAsCancelled();
 
         appointmentDAO.update(appointment);
@@ -56,23 +55,18 @@ public class AppointmentService {
             appointment.getPatient().getAppointmentList().remove(appointment);
         }
 
-        // إعلام قائمة الانتظار (لو مطلوب)
         if (clinicService != null && appointment.getClinic() != null) {
             clinicService.notifyWaitingList(appointment.getClinic(), appointment.getAppointmentDateTime());
         }
     }
 
-    // ✅ إلغاء من المريض (افتراضي — زي ما كان)
     public void cancel(Appointment appointment) throws SQLException {
         cancel(appointment, Status.Cancelled_by_Patient); // ← default
     }
-
-    // ✅ إلغاء من الدكتور
     public void cancelByDoctor(Appointment appointment) throws SQLException {
         cancel(appointment, Status.Cancelled_by_Doctor);
     }
 
-    // ✅ إلغاء بدون إشعار
     public void cancelWithoutNotify(Appointment appointment, Status cancelStatus) throws SQLException {
         if (appointment == null || appointment.getAppointmentDateTime() == null) return;
 
@@ -90,12 +84,10 @@ public class AppointmentService {
         }
     }
 
-    // ✅ إلغاء بدون إشعار (من المريض — افتراضي)
     public void cancelWithoutNotify(Appointment appointment) throws SQLException {
         cancelWithoutNotify(appointment, Status.Cancelled_by_Patient);
     }
 
-    // إعادة جدولة موعد
     public boolean reschedule(Appointment appointment, TimeSlot newSlot) throws SQLException {
         if (appointment == null || newSlot == null || appointment.getClinic() == null) return false;
         if (newSlot.isBooked()) return false;

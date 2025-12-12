@@ -36,7 +36,7 @@ public class WaitingListService {
     }
 
     // ★ إرسال عرض + بدء مؤقت 10 دقايق
-    private void offerSlotTo(WaitingList entry, TimeSlot freedSlot) throws SQLException {
+    public void offerSlotTo(WaitingList entry, TimeSlot freedSlot) throws SQLException {
         try {
             // 1. غيّر الحالة لـ OFFERED
             entry.setStatus(WaitingStatus.OFFERED);
@@ -84,7 +84,7 @@ public class WaitingListService {
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
-            }, 10, TimeUnit.MINUTES);
+            }, 1, TimeUnit.MINUTES);
 
         } catch (Exception e) {
             e.printStackTrace();

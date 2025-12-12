@@ -171,6 +171,20 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
             ps.executeUpdate();
         }
     }
+    public List<WaitingList> getAllByClinicId(int clinicId) throws SQLException {
+        String sql = "SELECT * FROM WaitingList WHERE clinic_id = ? ORDER BY request_time DESC";
+        List<WaitingList> list = new ArrayList<>();
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, clinicId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractWaitingListFromResultSet(rs));
+                }
+            }
+        }
+        return list;
+    }
 
     public void expireAllOfferedOlderThan(LocalDateTime threshold) throws SQLException {
         String sql = """

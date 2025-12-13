@@ -1,207 +1,189 @@
-# 🏥 Clinic Reservation System
+# 🏥 DocDesk –  Clinic Reservation System
 
-A **Java Desktop Application** built with **JavaFX** and **SQL** that manages clinic reservations for both **doctors** and **patients**. The system provides full scheduling, booking, reporting, and communication features to streamline clinic operations.
+> A **desktop-based clinic management application** built with **JavaFX** and **MySQL**, designed to streamline appointment booking, patient–doctor communication, and clinic administration.
+
+<!-- Logo credit note -->
+
+<p align="center">
+  <img src="docs/assets/logo.png" width="300"/>
+</p>
+
+> **Note:** The application name and logo were sourced from publicly available online resources and are used for **demonstration and educational purposes only**. All branding rights belong to their respective owners.
 
 ---
 
-## 🛠️ Tech Stack
+## 🎯 Overview
 
-* **Language:** Java
+**DocDesk** is a comprehensive clinic reservation system that serves both **Doctors** and **Patients**. It enables doctors to manage clinics, schedules, reservations, reports, and patient communication, while allowing patients to search for doctors, book appointments, join waiting lists, and chat directly with practitioners.
+
+The system follows **MVC architecture** and the **DAO pattern**, ensuring clean separation of concerns, scalability, and maintainability.
+
+---
+
+## 💻 Technology Stack
+
+* **Language:** Java 17+
 * **UI:** JavaFX (FXML)
-* **Database:** SQL (JDBC)
+* **UI Design:** Scene Builder
+* **Database:** MySQL (JDBC)
 * **Architecture:** MVC + DAO Pattern
-* **Reporting:** PDF & Excel Export
 * **Maps Integration:** Google Maps
-* **Email Service:** Automated Email Notifications
+* **Email Service:** JavaMail API
+* **Reporting:** Apache POI (Excel), iText (PDF)
+* **Automation:** Timer-based waiting list notifications
+
+---
+
+## 👨‍⚕️ Doctor Features
+
+### Clinic Management
+
+* Create and manage **one clinic per doctor**
+* Edit clinic details (name, address, price, consultation duration)
+* Set clinic location and view it via **Google Maps**
+* Enable or disable **online consultation**
+
+### Schedule & Slot Generation
+
+* Define working days and hours
+* System **automatically generates time slots** based on:
+
+  * Schedule start & end time
+  * Consultation duration
+* Schedule updates apply **starting from the next month** (existing bookings remain unchanged)
+
+### Appointments
+
+* View all reservations
+* Cancel appointments
+* After appointment time:
+
+  * Mark patient as **Present** or **Absent**
+  * If marked present → patient can submit a **rating**
+
+### Waiting List
+
+* View waiting list when a day is fully booked
+* Accept or reject additional patients
+* Automatic slot offering via email
+
+### Reports & Reviews
+
+* View clinic ratings and reviews
+* Generate full statistical reports including:
+
+  * Confirmed appointments
+  * Cancellations
+  * Absences
+  * Ratings
+  * Booking dates and patient details
+* Export reports as **PDF** or **Excel**
+
+### Account Settings
+
+* Update personal information
+* Change username and password
+
+---
+
+## 👩‍💼 Patient Features
+
+### Dashboard
+
+* Search doctors by name, specialty, or location
+* View doctor profiles and clinic details
+* View clinic location on map
+
+### Booking
+
+* View available time slots dynamically generated from doctor schedule
+* Book or cancel appointments
+
+### Waiting List
+
+* Join waiting list when no slots are available
+* Receive automatic email notification if a slot becomes available
+
+### Rating & Reviews
+
+* Submit rating **only after appointment is completed**
+
+### Communication
+
+* Direct chat with doctor
+
+### Account Management
+
+* Edit personal profile and contact information
 
 ---
 
 ## 💬 Real-Time Chat System
 
-The system includes a **professional in-app chat** between doctors and patients, designed for secure and organized communication.
-
-### Chat Features
-
-* One-to-one chat between **doctor and patient**
-* Accessible directly from the dashboard
-* Chat available:
-
-  * Before the appointment (inquiries & follow-ups)
-  * After booking confirmation
-* Messages are stored in the database
-* Clear separation between different conversations
-* Simple and intuitive chat UI inside the JavaFX application
-
----
-
-## 👥 User Roles
-
-### 👨‍⚕️ Doctor
-
-Each doctor can manage **one clinic** with full control over its data.
-
-#### Clinic Management
-
-* Create and edit clinic details
-* Set clinic location and view it on **Google Maps**
-* Enable or disable **online consultation**
-* Update clinic information at any time
-
-#### Schedule & Slots
-
-* Define working schedule (days & times)
-* System automatically **generates time slots** based on:
-
-  * Schedule start & end time
-  * Consultation duration
-* Schedule updates apply **starting from the next month** (existing data remains unchanged)
-
-#### Reservations
-
-* View all bookings
-* Cancel reservations
-* After appointment time:
-
-  * Mark patient as **Attended** or **Absent**
-  * If attended → patient can submit a **rating** (only after completion)
-
-#### Waiting List
-
-* View waiting list when a day is fully booked
-* Accept or reject additional patients
-
-#### Reviews & Reports
-
-* View clinic reviews and ratings
-* Generate detailed reports including:
-
-  * Confirmed appointments
-  * Cancellations
-  * Absences
-  * Reviews
-  * Booking dates
-  * Patient details
-* Export reports as **PDF** or **Excel**
-
-#### Account Settings
-
-* Update profile information
-* Change username and password
-
----
-
-### 🧑‍💼 Patient
-
-#### Dashboard Features
-
-* Search for doctors
-* View doctor profiles and clinic information
-* See clinic location on map
-
-#### Booking
-
-* View available time slots
-* Book appointments based on doctor’s schedule
-* Cancel bookings
-
-#### Waiting List
-
-* Join waiting list when no slots are available
-* Receive automatic email notification if a slot becomes available
-
-#### Rating & Reviews
-
-* Submit rating **only if appointment is marked as attended** by the doctor
-
-#### Communication
-
-* Chat with the doctor
-
-#### Account Management
-
-* Edit personal information
+* Professional **one-to-one chat** between doctor and patient
+* Accessible from user dashboards
+* Available before and after booking
+* Messages stored securely in the database
+* Separate conversations per appointment/user
 
 ---
 
 ## 🔁 Waiting List Automation
 
-When a booking is canceled:
-
-1. The system selects the **first patient** in the waiting list
+1. When a booking is canceled, the system selects the **first patient** in the waiting list
 2. Sends an **email notification** with the available slot
-3. If the patient does not book within **10 minutes**:
+3. If no booking occurs within **10 minutes**:
 
    * The request is marked as **Expired**
-   * The system notifies the next patient automatically
-
----
-
-## 🔐 Authentication
-
-* Secure **Login & Registration** for doctors and patients
-* Input validation and role-based access
-
----
-
-## 📊 Key Features Summary
-
-* Automatic slot generation
-* Real-time booking & cancellation handling
-* Waiting list with timed email notifications
-* Doctor attendance tracking
-* Rating system with completion validation
-* Full statistical reports
-* PDF & Excel export
-* Google Maps integration
-* Chat system
-
----
-
-## 🚀 Future Improvements
-
-* Online payment integration
-* Mobile application version
-* Admin dashboard
-* Advanced analytics
-
----
-
-## 📌 Project Purpose
-
-This project was developed as a **desktop clinic management system** to demonstrate:
-
-* JavaFX UI design
-* Database-driven applications
-* Clean architecture (MVC & DAO)
-* Real-world scheduling and reservation logic
+   * The system automatically notifies the next patient
 
 ---
 
 ## 🧩 UML & Database Design
 
-This project includes clear design documentation to support maintainability and scalability.
-
 ### UML Diagrams
 
 * Use Case Diagram
 * Class Diagram
-
-![UML Class Diagram](docs/uml/class-diagram.png)
+* Sequence Diagrams (Booking, Waiting List, Chat)
 
 
 ### Database Design
 
-* Relational database schema
-* Clear relationships and foreign keys
+* Relational and normalized schema
+* Main tables:
 
-![Database ERD](docs/database/erd.png)
+
+---
+
+## ⚙️ Requirements
+
+* JDK 17 or higher
+* MySQL Server
+* Scene Builder (optional)
+* JavaMail API
+* Apache POI & iText libraries
+
+---
+
+## 🚀 Getting Started
+
+```bash
+git clone https://github.com/Nour-Sameh/ClinicReservationSystem.git
+```
+
+1. Configure database connection
+2. Import SQL schema
+3. Run the application
+4. Make sure you downloaded all libraries 
 
 ---
 
 ## 👥 Contributors
 
 * **Nour Sameh**
-* **Nermen Ramadan**
 * **Mariem Tarek**
+* **Nermen Ramadan**
 * **Mariem Ali**
 
+---

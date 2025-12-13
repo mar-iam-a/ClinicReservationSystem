@@ -147,13 +147,17 @@ The system follows **MVC architecture** and the **DAO pattern**, ensuring clean 
 * Use Case Diagram
 * Class Diagram
 * Sequence Diagrams (Booking, Waiting List, Chat)
-
+<p align="center">
+  <img src="ClinicUML.png" "/>
+</p>
 
 ### Database Design
 
 * Relational and normalized schema
 * Main tables:
-
+<p align="center">
+  <img src="DatabaseDiagram.png" "/>
+</p>
 
 ---
 

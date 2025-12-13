@@ -46,7 +46,6 @@ public class ChatsController implements Initializable {
     private Practitioner selectedPractitioner;
     private Chat selectedChat;
 
-    // ==================== FXML INIT ====================
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         sendButton.setOnAction(e -> sendMessage());
@@ -57,7 +56,6 @@ public class ChatsController implements Initializable {
         }
     }
 
-    // ==================== EXTERNAL ENTRY POINTS ====================
     public void setPatient(Patient patient) {
         this.currentPatient = patient;
         this.mode = Mode.PATIENT;
@@ -115,7 +113,6 @@ public class ChatsController implements Initializable {
         });
     }
 
-    // ==================== CHAT LIST LOADING ====================
     private void loadPatientChatList() {
         if (currentPatient == null) {
             System.err.println("currentPatient is NULL in loadPatientChatList!");

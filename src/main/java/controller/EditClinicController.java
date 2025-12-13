@@ -1,6 +1,7 @@
 package controller;
 
 import dao.*;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -24,7 +25,7 @@ public class EditClinicController {
     @FXML private VBox consultationFieldsBox;
     @FXML private TextField consultationPriceField;
     @FXML private TextField consultationDaysField;
-
+    private DoctorController dashboardController;
     private Clinic clinic;
     private Practitioner doctor;
 
@@ -117,7 +118,7 @@ public class EditClinicController {
     public void setClinic(Clinic clinic, Practitioner doctor) {
         this.clinic = clinic;
         this.doctor = doctor;
-
+        this.dashboardController = dashboardController;
         clinicNameField.setText(clinic.getName());
         clinicAddressField.setText(clinic.getAddress());
         priceField.setText(String.format("%.2f", clinic.getPrice()));
@@ -181,13 +182,20 @@ public class EditClinicController {
                 showAlert("Validation Error", "All fields are required.");
                 return;
             }
-
+            if (name.isEmpty() || name.length() < 2 || name.matches("\\d+")) {
+                showAlert("Error", "Name must be at least 3 letters and cannot be only numbers.");
+                return;
+            }
+            if (!address.matches("\\d+-[a-zA-Z]+")) {
+                showAlert("Error", "Address must be digits, followed by '-', then letters only (e.g., 123-ABC).");
+                return;
+            }
             int slotDuration;
             double price;
             try {
                 slotDuration = Integer.parseInt(slotStr);
                 price = Double.parseDouble(priceStr);
-                if (slotDuration <= 0 || price < 0) throw new NumberFormatException();
+                if (slotDuration <= 5 || price < 50) throw new NumberFormatException();
             } catch (NumberFormatException e) {
                 showAlert("Invalid Input", "Slot duration must be a positive integer. Price must be non-negative.");
                 return;
@@ -248,12 +256,22 @@ public class EditClinicController {
             clinic.setConsultationDurationDays(consultationDays);
             clinicDAO.update(clinic);
 
-            clinicDAO.updatePendingScheduleId(clinic.getID(), newPending.getID());
-
             LocalDate nextMonthStart = LocalDate.now().plusMonths(1).withDayOfMonth(1);
             String formattedDate = nextMonthStart.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
             statusLabel.setText("✅ Saved! Changes will be active from " + formattedDate + ".");
             statusLabel.setStyle("-fx-text-fill: #2e7d32; -fx-font-weight: bold;");
+            Platform.runLater(() -> {
+                Stage thisStage = (Stage) clinicNameField.getScene().getWindow();
+                Stage owner = (Stage) thisStage.getOwner(); // الـ dashboard اللي فتح النافذة
+                if (owner != null) {
+                    try {
+                        Object ownerController = owner.getScene().getRoot().getUserData();
+                        if (ownerController instanceof DoctorController) {
+                            ((DoctorController) ownerController).refreshClinicInfo();
+                        }
+                    } catch (Exception ignored) { }
+                }
+            });
 
         } catch (SQLException e) {
             e.printStackTrace();

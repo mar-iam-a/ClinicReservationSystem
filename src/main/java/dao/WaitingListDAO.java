@@ -145,7 +145,16 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
             }
         }
     }
-
+    // في الـ DAO
+    public void updateStatus(int id, WaitingStatus status) throws SQLException {
+        String sql = "UPDATE WaitingList SET status = ? WHERE id = ?";
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, status.name()); // ← يحول CANCELLED لـ "CANCELLED"
+            ps.setInt(2, id);
+            ps.executeUpdate();
+        }
+    }
     @Override
     public List<WaitingList> getAll() throws SQLException {
         String sql = "SELECT * FROM WaitingList ORDER BY request_time DESC";
@@ -185,7 +194,37 @@ public class WaitingListDAO implements GenericDAO<WaitingList> {
         }
         return list;
     }
-
+    public List<WaitingList> findByClinicId(int clinicId) throws SQLException {
+        String sql = "SELECT * FROM WaitingList WHERE clinic_id = ? AND status = 'PENDING' ORDER BY request_time ASC";
+        List<WaitingList> list = new ArrayList<>();
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, clinicId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(extractWaitingListFromResultSet(rs));
+                }
+            }
+        }
+        return list;
+    }
+    // dao/WaitingListDAO.java
+    public void expireOldRequests(int clinicId) throws SQLException {
+        String sql = """
+        UPDATE WaitingList 
+        SET status = ?
+        WHERE clinic_id = ? 
+          AND status = ?
+          AND request_time < NOW() - INTERVAL 10 MINUTE
+        """;
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, WaitingStatus.EXPIRED.name());
+            ps.setInt(2, clinicId);
+            ps.setString(3, WaitingStatus.PENDING.name());
+            ps.executeUpdate();
+        }
+    }
     public void expireAllOfferedOlderThan(LocalDateTime threshold) throws SQLException {
         String sql = """
             UPDATE WaitingList 

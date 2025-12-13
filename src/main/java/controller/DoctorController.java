@@ -8,6 +8,8 @@ import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -20,10 +22,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.geometry.Insets;
+import javafx.util.Duration;
 import model.*;
-import service.NotificationService;
-import service.PractitionerService;
-import service.WaitingListService;
+import service.*;
 import util.ExcelExporter;
 import util.PDFExporter;
 
@@ -84,14 +85,22 @@ public class DoctorController {
     @FXML private PasswordField newPasswordField;
     @FXML private PasswordField confirmPasswordField;
     @FXML private Button deleteClinicButton;
+    @FXML private VBox waitingListContainer;
+
+
     private Button activeButton = null;
     @FXML private VBox waitingListBox;
-
+    private Stage stage;
     private final NotificationService notificationService = new NotificationService();
     private Practitioner currentDoctor;
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
     private final WaitingListService waitingListService = new WaitingListService();
+    private final PractitionerDAO practitionerDAO = new PractitionerDAO();
 
+    private final AppointmentService appointmentService = new AppointmentService();
+    private final PatientService patientService = new PatientService();
+
+    //practitionerDAO
     private final PractitionerService practitionerService = new PractitionerService();
     private List<Appointment> allAppointments;
 
@@ -104,7 +113,22 @@ public class DoctorController {
         if (appointmentsCalendar != null) {
             appointmentsCalendar.setOnAction(e -> filterAppointmentsByDate());
         }
-
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.minutes(5), event -> {
+                    if (currentDoctor != null && currentDoctor.getClinic() != null) {
+                        try {
+                            int clinicId = currentDoctor.getClinic().getID();
+                            waitingListService.expireOldRequests(clinicId);
+                            sendEmailToNextPatient(clinicId);
+                            System.out.println("✅ Auto-expired old requests at " + LocalDateTime.now());
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                })
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
     }
 
     public void setDoctor(Practitioner doctor) {
@@ -199,10 +223,256 @@ public class DoctorController {
         slotDurationLabel.setText("—"); scheduleText.setText("You don't have a clinic yet.");
     }
 
+
+    @FXML
+    private void onWaitingListClicked() {
+        clinicInfoBox.setVisible(false);
+        appointmentsBox.setVisible(false);
+        reviewsBox.setVisible(false);
+        reportBox.setVisible(false);
+        settingsBox.setVisible(false);
+
+        waitingListBox.setVisible(true);
+
+        loadDoctorWaitingList();
+    }
+
+    private void loadDoctorWaitingList() {
+        waitingListContainer.getChildren().clear();
+
+        if (currentDoctor == null || currentDoctor.getClinic() == null) {
+            waitingListContainer.getChildren().add(
+                    new Label("⚠️ No clinic is linked to this account.")
+            );
+            return;
+        }
+
+        try {
+            int clinicId = currentDoctor.getClinic().getID();
+            List<WaitingList> requests = waitingListService.getWaitingListByClinicId(clinicId);
+
+            if (requests == null || requests.isEmpty()) {
+                Label empty = new Label("📭 There are no waiting lists at your clinic at the moment");
+                empty.setStyle("-fx-font-size: 16px; -fx-text-fill: #7f8c8d; -fx-alignment: center;");
+                waitingListContainer.getChildren().add(empty);
+                return;
+            }
+
+            for (WaitingList req : requests) {
+                waitingListContainer.getChildren().add(createWaitingCard(req));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            Label err = new Label("❌ Queue loading error" + e.getMessage());
+            err.setStyle("-fx-text-fill: red; -fx-font-size: 14px;");
+            waitingListContainer.getChildren().add(err);
+        }
+    }
+
+private VBox createWaitingCard(WaitingList req) {
+    VBox card = new VBox(8);
+    card.setPadding(new Insets(12));
+    card.setStyle("-fx-background-color: #fdf9f0; -fx-border-color: #f1c40f; -fx-border-width: 1; -fx-border-radius: 8;");
+
+    try {
+        String patientName = "—";
+        int patientId = req.getPatient().getID();
+        if (patientId > 0) {
+            try {
+                Patient p = req.getPatient();
+                patientName = (p != null) ? p.getName() : "Patient #" + patientId;
+            }catch (Exception e) {
+                patientName = "Error loading patient";
+            }
+        }
+
+        String timeStr = "—";
+        if (req.getRequestTime() != null) {
+            try {
+                timeStr = req.getRequestTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            } catch (Exception ignored) { }
+        }
+
+        WaitingStatus statusEnum = req.getStatus();
+        String statusText = (statusEnum != null) ? statusEnum.name() : "UNKNOWN";
+
+        String statusArabic = switch (statusEnum) {
+            case PENDING -> "PENDING";
+            case OFFERED -> "OFFERED";
+            case CONFIRMED -> "CONFIRMED";
+            case EXPIRED -> "EXPIRED";
+            case CANCELLED -> "CANCELLED";
+            default -> "Unkown";
+        };
+
+        String color = switch (statusEnum) {
+            case PENDING -> "#E67E22";
+            case OFFERED -> "#3498DB";
+            case CONFIRMED -> "#27AE60";
+            case EXPIRED, CANCELLED -> "#E74C3C";
+            default -> "#95A5A6";
+        };
+
+        Label pLabel = new Label("👤 " + patientName);
+        pLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+
+        Label timeLabel = new Label("🕒 " + timeStr);
+        Label statusLabel = new Label("📊 " + statusArabic);
+        statusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + color + ";");
+
+        HBox buttons = new HBox(8);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+
+        if (statusEnum == WaitingStatus.PENDING) {
+            Button approveBtn = new Button("Aproved ✓ ");
+            Button rejectBtn = new Button("Reject ✗ ");
+
+            approveBtn.setStyle("-fx-background-color: #27AE60; -fx-text-fill: white;");
+            rejectBtn.setStyle("-fx-background-color: #E74C3C; -fx-text-fill: white;");
+
+            approveBtn.setOnAction(e -> offerAppointment(req));
+            rejectBtn.setOnAction(e -> cancelRequest(req));
+
+            buttons.getChildren().addAll(approveBtn, rejectBtn);
+        }
+
+        card.getChildren().addAll(pLabel, timeLabel, statusLabel, new Separator(), buttons);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        Label errorLabel = new Label("❗ Order display error");
+        errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+        card.getChildren().add(errorLabel);
+    }
+
+    return card;
+}
+    private void offerAppointment(WaitingList req) {
+        try {
+            waitingListService.updateStatus(req.getId(), WaitingStatus.OFFERED);
+
+            Patient patient =  patient = req.getPatient();
+            if (patient == null || patient.getEmail() == null || patient.getEmail().trim().isEmpty()) {
+                loadDoctorWaitingList();
+                new Alert(Alert.AlertType.WARNING,
+                        "Patient #" + req.getPatient().getID() + " has no email — no notification sent.")
+                        .showAndWait();
+                return;
+            }
+
+            String subject = "🎉 Appointment Offer – Action Required!";
+            String body = String.format("""
+            Dear %s,
+            
+            An appointment slot is now available for you at:
+            **%s**
+            
+            ⏰ Please log in to your account within 10 minutes to confirm.
+            If not confirmed, the offer will expire automatically, and the slot will be given to the next patient.
+            
+            Thank you,
+            Clinic Management Team
+            """,
+                    patient.getName(),
+                    (req.getClinic() != null ? req.getClinic().getName() : "Unknown Clinic")
+            );
+
+            notificationService.sendEmail(patient.getEmail(), subject, body);
+
+            loadDoctorWaitingList();
+
+            new Alert(Alert.AlertType.INFORMATION,
+                    "✓ Appointment offered and email sent to patient.")
+                    .showAndWait();
+
+        } catch (SQLException | MessagingException e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR,
+                    "❌ Failed to offer appointment: " + e.getMessage())
+                    .showAndWait();
+        }
+    }
+
+    private void cancelRequest(WaitingList req) {
+        try {
+            waitingListService.updateStatus(req.getId(), WaitingStatus.CANCELLED);
+
+            Patient patient = req.getPatient();
+            if (patient == null || patient.getEmail() == null || patient.getEmail().trim().isEmpty()) {
+                loadDoctorWaitingList();
+                new Alert(Alert.AlertType.WARNING,
+                        "Patient #" + req.getPatient().getID() + " has no email — no notification sent.")
+                        .showAndWait();
+                return;
+            }
+
+            String subject = "❌ Your Waiting List Request Has Been Cancelled";
+            String body = String.format("""
+            Dear %s,
+            
+            We regret to inform you that your waiting list request for:
+            **%s**
+            
+            has been cancelled.
+            
+            Possible reasons:
+            - The doctor declined the request.
+            - You did not confirm the offered slot within 10 minutes.
+            
+            You may submit a new request anytime.
+            
+            Thank you for your understanding.
+            """,
+                    patient.getName(),
+                    (req.getClinic() != null ? req.getClinic().getName() : "Unknown Clinic")
+            );
+
+            notificationService.sendEmail(patient.getEmail(), subject, body);
+
+            loadDoctorWaitingList();
+
+            new Alert(Alert.AlertType.INFORMATION,
+                    "✓ Request cancelled and email sent to patient.")
+                    .showAndWait();
+
+        }  catch (SQLException | MessagingException e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR,
+                    "❌ Failed to cancel request: " + e.getMessage())
+                    .showAndWait();
+        }
+
+    }
+
+
+@FXML
+private void checkExpiredRequests() {
+    if (currentDoctor == null || currentDoctor.getClinic() == null) return;
+
+    try {
+        int clinicId = currentDoctor.getClinic().getID();
+        waitingListService.expireOldRequests(clinicId);
+        sendEmailToNextPatient(clinicId);
+        loadDoctorWaitingList(); // refresh
+
+        Alert success = new Alert(Alert.AlertType.INFORMATION);
+        success.setTitle("Updated Done !");
+        success.setHeaderText(null);
+        success.setContentText("✓ done.");
+        success.showAndWait();
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        showErrorAlert("Faild to ubdate " + e.getMessage());
+    }
+}
+    private void showErrorAlert(String msg) {
+        new Alert(Alert.AlertType.ERROR, msg).showAndWait();
+    }
     private String safeString(String s, String f) {
         return (s != null && !s.trim().isEmpty()) ? s.trim() : f;
     }
-
     @FXML
     private void handleEdit() {
         if (currentDoctor != null && currentDoctor.getClinic() != null) {
@@ -212,12 +482,11 @@ public class DoctorController {
                 EditClinicController controller = loader.getController();
                 controller.setClinic(currentDoctor.getClinic(), currentDoctor);
 
-
-                Stage stage = new Stage();
-                stage.setTitle("Edit Clinic");
-                stage.setScene(new Scene(root));
-                stage.show();
-
+                Stage editStage = new Stage();
+                editStage.initOwner(this.stage);
+                editStage.setTitle("Edit Clinic");
+                editStage.setScene(new Scene(root));
+                editStage.show();
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -225,6 +494,114 @@ public class DoctorController {
             }
         }
     }
+    private void sendEmailToNextPatient(int clinicId) {
+        try {
+            List<WaitingList> pendingRequests = waitingListService.getWaitingListByClinicId(clinicId);
+
+            if (pendingRequests != null && !pendingRequests.isEmpty()) {
+
+                WaitingList nextRequest = pendingRequests.get(0);
+                Patient patient = nextRequest.getPatient();
+
+                if (patient != null && patient.getEmail() != null) {
+
+                    String subject = "🎉 Appointment Opportunity Available!";
+
+                    String body = """
+                    <html>
+                    <body style="font-family: Arial; line-height: 1.6;">
+
+                        <h2 style="color:#2c7be5;">Hello {name},</h2>
+
+                        <p>
+                            Due to a <strong>cancellation</strong> or an expired request, 
+                            you now have a new opportunity to book an appointment in:
+                        </p>
+
+                        <h3 style="color:#444;">Clinic: {clinicName}</h3>
+
+                        <p>Please log into your account and check your waiting list.</p>
+
+                        <br>
+                        <p style="color:#777;">Thank you!</p>
+
+                    </body>
+                    </html>
+                    """;
+
+                    body = body.replace("{name}", patient.getName())
+                            .replace("{clinicName}", nextRequest.getClinic().getName());
+
+                    notificationService.sendEmail(patient.getEmail(), subject, body);
+
+
+                }
+            }
+
+        } catch (SQLException | MessagingException e) {
+            e.printStackTrace();
+            showErrorAlert("Failed to reject request: " + e.getMessage());
+        }
+    }
+
+    private void confirmAndReject(WaitingList req) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Reject Request");
+        alert.setHeaderText("Are you sure?");
+        alert.setContentText("Do you want to reject the request of patient: " + req.getPatient().getName() + "?");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                try {
+                    waitingListService.updateStatus(req.getId(), WaitingStatus.CANCELLED);
+                    Patient patient = req.getPatient();
+
+                    if (patient != null && patient.getEmail() != null) {
+
+                        String subject = "❌ Your Appointment Request Was Rejected";
+
+                        String body = """
+                        <html>
+                        <body style="font-family: Arial; line-height: 1.6;">
+
+                            <h2 style="color:#d9534f;">Hello {name},</h2>
+
+                            <p>
+                                We regret to inform you that your request for an appointment in:
+                            </p>
+
+                            <h3 style="color:#444;">Clinic: {clinicName}</h3>
+
+                            <p>has been <strong>rejected</strong> by the doctor.</p>
+
+                            <p>You may submit a new request at any time.</p>
+
+                            <br>
+                            <p style="color:#777;">Thank you!</p>
+
+                        </body>
+                        </html>
+                        """;
+
+                        body = body.replace("{name}", patient.getName())
+                                .replace("{clinicName}", req.getClinic().getName());
+
+                        notificationService.sendEmail(patient.getEmail(), subject, body);
+                    }
+
+                    loadDoctorWaitingList();
+
+                    sendEmailToNextPatient(currentDoctor.getClinic().getID());
+
+                } catch (SQLException | MessagingException e) {
+                    e.printStackTrace();
+                    showErrorAlert("Failed to reject request: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+
     @FXML private void handleLogout() {
         try {
             Parent r = FXMLLoader.load(getClass().getResource("/home.fxml"));
@@ -663,6 +1040,21 @@ public class DoctorController {
             }
         });
     }
+    public void refreshClinicInfo() {
+        try {
+            // إعادة تحميل الدكتور (أو الكلاينك فقط)
+            Practitioner updatedDoctor = practitionerDAO.getById(currentDoctor.getID());
+            if (updatedDoctor != null && updatedDoctor.getClinic() != null) {
+                currentDoctor = updatedDoctor; // أو حدّث فقط الـ clinic
+                // حدّث العناصر في الواجهة:
+                clinicNameLabel.setText(currentDoctor.getClinic().getName());
+                priceLabel.setText(String.format("%.2f EGP", currentDoctor.getClinic().getPrice()));
+                // ... وغيرهم حسب الحاجة
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
     private void confirmAndCancelAppointment(Appointment a) {
         String patientName = (a.getPatient() != null) ? a.getPatient().getName() : "Anonymous";
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
@@ -918,7 +1310,6 @@ public class DoctorController {
     }
     @FXML
     private void handleSettings() {
-        // ✅ إخفاء كل الـ boxes
         clinicInfoBox.setVisible(false);
         appointmentsBox.setVisible(false);
         reviewsBox.setVisible(false);
@@ -1029,7 +1420,6 @@ public class DoctorController {
         });
 
         try {
-            // ✅ استخدم MimeMessage مباشرةً — مش Message
             MimeMessage message = new MimeMessage(session);
             message.setFrom(new InternetAddress("noreply@yourclinic.com"));
             message.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(to));
@@ -1068,13 +1458,10 @@ public class DoctorController {
                         int clinicId = currentDoctor.getClinic().getID();
                         String clinicName = currentDoctor.getClinic().getName();
 
-                        // ✅ 1. إلغاء كل المواعيد مع إرسال إشعارات
                         cancelAllAppointmentsAndNotify(clinicId, clinicName);
 
-                        // ✅ 2. حذف العيادة من قاعدة البيانات
                         deleteClinicFromDB(clinicId);
 
-                        // ✅ 3. تحديث الواجهة
                         Platform.runLater(() -> {
                             currentDoctor.setClinic(null);
                             showNoClinic();
@@ -1092,7 +1479,6 @@ public class DoctorController {
         });
     }
 
-    // ✅ دالة مساعدة: إلغاء كل المواعيد وإرسال إيميلات
     private void cancelAllAppointmentsAndNotify(int clinicId, String clinicName) throws SQLException {
         AppointmentDAO appointmentDAO = new AppointmentDAO();
         List<Appointment> appointments = appointmentDAO.getAppointmentsByClinicId(clinicId);
@@ -1102,7 +1488,6 @@ public class DoctorController {
                 a.cancelByDoctor();
                 appointmentDAO.updateStatus(a.getId(), a.getStatus());
 
-                // ✅ إرسال إيميل للمريض
                 Patient patient = a.getPatient();
                 TimeSlot slot = a.getAppointmentDateTime();
                 if (patient != null && slot != null) {
@@ -1119,14 +1504,11 @@ public class DoctorController {
         }
     }
 
-    // ✅ دالة مساعدة: حذف العيادة من قاعدة البيانات
     private void deleteClinicFromDB(int clinicId) throws SQLException {
-        // 📌 ملاحظة: لو عندك ClinicService — استخدميها
-        // وإلا، استخدم DAO مباشر:
+
         try (java.sql.Connection con = database.DBConnection.getConnection()) {
             con.setAutoCommit(false);
 
-            // حذف cascade: appointments, ratings, time slots, schedule
             String[] tables = {
                     "Appointments", "Ratings", "TimeSlots", "WorkingHoursRules"
             };
@@ -1138,14 +1520,12 @@ public class DoctorController {
                 }
             }
 
-            // حذف schedule لو منفصل
             String delSchedule = "DELETE FROM Schedules WHERE id IN (SELECT schedule_id FROM Clinics WHERE id = ?)";
             try (java.sql.PreparedStatement ps = con.prepareStatement(delSchedule)) {
                 ps.setInt(1, clinicId);
                 ps.executeUpdate();
             }
 
-            // حذف العيادة نفسها
             String delClinic = "DELETE FROM Clinics WHERE id = ?";
             try (java.sql.PreparedStatement ps = con.prepareStatement(delClinic)) {
                 ps.setInt(1, clinicId);
@@ -1164,12 +1544,12 @@ public class DoctorController {
         try {
             int clinicId = currentDoctor.getClinic().getID();
             WaitingListDAO wlDAO = new WaitingListDAO();
-            List<WaitingList> entries = wlDAO.getAllByClinicId(clinicId); // ← نحتاج دالة getAllByClinicId
+            List<WaitingList> entries = wlDAO.getAllByClinicId(clinicId);
 
             if (entries.isEmpty()) {
                 waitingListBox.getChildren().add(new Label("✅ No patients in waiting list."));
             } else {
-                entries.sort((a, b) -> b.getRequestTime().compareTo(a.getRequestTime())); // الأحدث أولًا
+                entries.sort((a, b) -> b.getRequestTime().compareTo(a.getRequestTime()));
                 for (WaitingList e : entries) {
                     waitingListBox.getChildren().add(createWaitingListCard(e));
                 }
@@ -1206,7 +1586,6 @@ public class DoctorController {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // ✅ زر عرض يدوي (اختياري)
         if (e.getStatus() == WaitingStatus.PENDING) {
             Button offerBtn = new Button("➡️ Offer Now");
             offerBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 3 8;");
@@ -1219,7 +1598,6 @@ public class DoctorController {
         return card;
     }
     private void offerSlotManually(WaitingList entry) {
-        // ✅ تأكيد
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Manual Offer");
         confirm.setHeaderText("Offer slot to " + entry.getPatient().getName() + "?");
@@ -1227,7 +1605,6 @@ public class DoctorController {
         confirm.showAndWait().ifPresent(res -> {
             if (res == ButtonType.OK) {
                 try {
-                    // خد أول سلوت حر في نفس اليوم (أو عيّن سلوت يدويًا)
                     LocalDate date = entry.getDate();
                     TimeSlot freeSlot = findFirstFreeSlotInDay(currentDoctor.getClinic(), date);
                     if (freeSlot == null) {
@@ -1235,11 +1612,9 @@ public class DoctorController {
                         return;
                     }
 
-                    // ✅ استخدم نفس المنطق من onAppointmentCancelled
                     waitingListService.offerSlotTo(entry, freeSlot);
                     new Alert(Alert.AlertType.INFORMATION, "✅ Offer sent to " + entry.getPatient().getName()).show();
 
-                    // تحديث العرض
                     loadWaitingListForClinic();
 
                 } catch (Exception ex) {
@@ -1250,7 +1625,6 @@ public class DoctorController {
         });
     }
 
-    // مساعدة: إيجاد أول سلوت متاح في يوم معين
     private TimeSlot findFirstFreeSlotInDay(Clinic clinic, LocalDate date) throws SQLException {
         TimeSlotDAO dao = new TimeSlotDAO();
         List<TimeSlot> slots = dao.getSlotsByClinic(clinic.getID());
@@ -1266,7 +1640,7 @@ public class DoctorController {
     @FXML
     private void hoverNavButton(javafx.scene.input.MouseEvent e) {
         Button btn = (Button) e.getSource();
-        if (btn != activeButton) { // ما نغيرش اللون لو الزرار active
+        if (btn != activeButton) {
             btn.setStyle("-fx-background-color: linear-gradient(to bottom, #e2f5f0, #cdeee7);" +
                     "-fx-text-fill: #333; -fx-font-size: 16px; -fx-font-weight: bold;" +
                     "-fx-padding: 8 24; -fx-background-radius: 25; -fx-border-radius: 25;" +
@@ -1290,16 +1664,14 @@ public class DoctorController {
     @FXML
     private void pressNavButton(javafx.scene.input.MouseEvent e) {
         Button btn = (Button) e.getSource();
-        // نجعل الزرار active عند الضغط
         if (activeButton != null && activeButton != btn) {
-            // رجع الزرار السابق لحالته الطبيعية
             activeButton.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #e8f6f3);" +
                     "-fx-text-fill: #444; -fx-font-size: 16px; -fx-font-weight: bold;" +
                     "-fx-padding: 8 24; -fx-background-radius: 25; -fx-border-radius: 25;" +
                     "-fx-border-color: #c8d6d5; -fx-border-width: 1;" +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0.2, 0, 2);");
         }
-        activeButton = btn; // تعيين الزرار الحالي كـ active
+        activeButton = btn;
 
         btn.setStyle("-fx-background-color: linear-gradient(to bottom, #b9e5db, #9ad7cd);" +
                 "-fx-text-fill: #222; -fx-font-size: 16px; -fx-font-weight: bold;" +

@@ -10,7 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-// ★★ استيرادات مطلوبة ★★
 import jakarta.mail.MessagingException;
 
 public class WaitingListService {
@@ -19,7 +18,6 @@ public class WaitingListService {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private final NotificationService notificationService = new NotificationService();
 
-    // ★ عند إلغاء حجز → شيك على قائمة الانتظار في نفس اليوم
     public void onAppointmentCancelled(Appointment cancelledAppointment) throws SQLException {
         if (cancelledAppointment == null) return;
         TimeSlot slot = cancelledAppointment.getAppointmentDateTime();
@@ -35,15 +33,12 @@ public class WaitingListService {
         }
     }
 
-    // ★ إرسال عرض + بدء مؤقت 10 دقايق
     public void offerSlotTo(WaitingList entry, TimeSlot freedSlot) throws SQLException {
         try {
-            // 1. غيّر الحالة لـ OFFERED
             entry.setStatus(WaitingStatus.OFFERED);
             entry.setRequestTime(LocalDateTime.now());
             waitingListDAO.update(entry);
 
-            // 2. أرسل إيميل (باستخدام NotificationService — وليس DoctorController)
             Patient p = entry.getPatient();
             Clinic clinic = entry.getClinic();
             if (p != null && p.getEmail() != null && clinic != null) {
@@ -68,7 +63,6 @@ public class WaitingListService {
                 }
             }
 
-            // 3. مؤقت 10 دقايق
             int entryId = entry.getId();
             scheduler.schedule(() -> {
                 try {
@@ -78,7 +72,6 @@ public class WaitingListService {
                         refreshed.setStatus(WaitingStatus.EXPIRED);
                         waitingListDAO.update(refreshed);
 
-                        // عرض على اللي بعده
                         offerNextInQueue(refreshed.getClinic().getID(), refreshed.getDate());
                     }
                 } catch (SQLException ex) {
@@ -96,25 +89,33 @@ public class WaitingListService {
     public void offerNextInQueue(int clinicId, LocalDate date) throws SQLException {
         WaitingList next = waitingListDAO.getFirstPendingForDate(clinicId, date);
         if (next != null) {
-            // نستخدم أول سلوت متاح في اليوم — أو نختار وقت افتراضي
-            // ⚠️ ملاحظة: `TimeSlot` ممكن يكون له كونستركتور (date, time)
-            // لو مش موجود، عدّل كلاس TimeSlot أو استخدم mock
+
             TimeSlot slot = new TimeSlot(date, java.time.LocalTime.of(10, 0));
             offerSlotTo(next, slot);
         }
     }
-
-    // ★ إضافة طلب انتظار
+    // service/WaitingListService.java
+    public void updateStatus(int requestId, WaitingStatus newStatus) throws SQLException{
+        if (requestId <= 0) {
+            throw new IllegalArgumentException("Invalid request ID");
+        }
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Status cannot be null");
+        }
+        waitingListDAO.updateStatus(requestId, newStatus);
+    }
     public void addPatient(WaitingList item) throws SQLException {
         waitingListDAO.add(item);
     }
-
-    // ★ تحقق من وجود طلب نشط
+    public void expireOldRequests(int clinicId) throws SQLException {
+        waitingListDAO.expireOldRequests(clinicId);
+    }
     public boolean existsPendingRequest(int patientId, int clinicId, LocalDate date) throws SQLException {
         return waitingListDAO.existsPendingRequest(patientId, clinicId, date);
     }
-
-    // ★ جلب طلبات مريض
+    public List<WaitingList> getWaitingListByClinicId(int clinicId) throws SQLException {
+        return waitingListDAO.findByClinicId(clinicId);
+    }
     public List<WaitingList> getPatientWaitingList(int patientId) throws SQLException {
         return waitingListDAO.getPatientPendingRequests(patientId);
     }

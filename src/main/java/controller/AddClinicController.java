@@ -166,7 +166,7 @@ public class AddClinicController {
 
         try {
             slotDuration = Integer.parseInt(durationText);
-            if (slotDuration <= 0) {
+            if (slotDuration <= 5) {
                 showAlert("Error", "Slot duration must be positive.");
                 return;
             }
@@ -180,7 +180,7 @@ public class AddClinicController {
         try {
             addDayRule(workingRules, satCheck, satStart, satEnd, DayOfWeek.SATURDAY);
             addDayRule(workingRules, sunCheck, sunStart, sunEnd, DayOfWeek.SUNDAY);
-            addDayRule(workingRules, sunCheck, sunStart, sunEnd, DayOfWeek.MONDAY);
+            addDayRule(workingRules, monCheck, monStart, sunEnd, DayOfWeek.MONDAY);
             addDayRule(workingRules, tueCheck, tueStart, tueEnd, DayOfWeek.TUESDAY);
             addDayRule(workingRules, wedCheck, wedStart, wedEnd, DayOfWeek.WEDNESDAY);
             addDayRule(workingRules, thuCheck, thuStart, thuEnd, DayOfWeek.THURSDAY);
@@ -232,6 +232,14 @@ public class AddClinicController {
 
         if (name.isEmpty() || address.isEmpty() || priceText.isEmpty() || selectedDept == null) {
             showAlert("Error", "All fields are required!");
+            return;
+        }
+        if (name.isEmpty() || name.length() < 2 || name.matches("\\d+")) {
+            showAlert("Error", "Name must be at least 3 letters and cannot be only numbers.");
+            return;
+        }
+        if (!address.matches("\\d+-[a-zA-Z]+")) {
+            showAlert("Error", "Address must be digits, followed by '-', then letters only (e.g., 123-ABC).");
             return;
         }
 

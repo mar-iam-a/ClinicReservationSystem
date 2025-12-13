@@ -123,14 +123,14 @@ public class RegisterController {
             boolean exists = false;
             if (patientCheck.isSelected()) {
                 for (Patient p : patientDAO.getAll()) {
-                    if (p.getEmail().equalsIgnoreCase(email) || p.getPhone().equals(phone)) {
+                    if (p.getEmail().equals(email) || p.getPhone().equals(phone)) {
                         exists = true;
                         break;
                     }
                 }
             } else {
                 for (Practitioner d : practitionerDAO.getAll()) {
-                    if (d.getEmail().equalsIgnoreCase(email) || d.getPhone().equals(phone)) {
+                    if (d.getEmail().equals(email) || d.getPhone().equals(phone)) {
                         exists = true;
                         break;
                     }
